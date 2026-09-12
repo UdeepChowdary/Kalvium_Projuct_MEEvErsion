@@ -7,6 +7,7 @@ import DemoSwitcherBar from "@/components/DemoSwitcherBar";
 import Navbar from "@/components/Navbar";
 import SmoothScroll from "@/components/SmoothScroll";
 import ScrollProgress from "@/components/ScrollProgress";
+import CursorAura from "@/components/CursorAura";
 
 const caveatDisplay = Caveat({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <ScrollProgress />
+            <CursorAura />
             <SmoothScroll>
               <div className="sticky top-0 z-40 w-full">
                 <DemoSwitcherBar />
