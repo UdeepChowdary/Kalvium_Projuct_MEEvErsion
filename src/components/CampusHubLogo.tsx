@@ -21,19 +21,18 @@ export default function CampusHubLogo({
   showTagline = false,
   className = "",
 }: CampusHubLogoProps) {
-  // Size tokens
   const iconSize = {
-    sm: "w-7 h-7",
-    md: "w-8 h-8",
-    lg: "w-11 h-11",
-    xl: "w-14 h-14",
+    sm: "w-9 h-9",
+    md: "w-11 h-11",
+    lg: "w-14 h-14",
+    xl: "w-18 h-18",
   }[size];
 
   const textSize = {
-    sm: "text-lg",
-    md: "text-xl",
-    lg: "text-2xl",
-    xl: "text-3xl",
+    sm: "text-xl",
+    md: "text-2xl",
+    lg: "text-3xl",
+    xl: "text-4xl",
   }[size];
 
   const taglineSize = {
@@ -44,45 +43,48 @@ export default function CampusHubLogo({
   }[size];
 
   return (
-    <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      {/* Official Graduation Cap Mark (Adaptive Light / Dark Squircles) */}
-      <div className={`relative ${iconSize} shrink-0 rounded-xl overflow-hidden shadow-soft-xs transition-transform duration-200 group-hover:scale-105`}>
-        {/* Light Mode Official Brand Mark */}
+    /*
+     * items-end → bottom of icon aligns with text baseline
+     * graduation cap naturally overhangs above, exactly like the reference
+     */
+    <div className={`inline-flex items-center gap-0.5 select-none ${className}`}>
+      {/* Light mode icon — dark graduation cap */}
+      <div className={`relative ${iconSize} shrink-0 transition-transform duration-200 group-hover:scale-105 dark:hidden`}>
         <Image
-          src="/brand/app-icon-light.png"
+          src="/brand/app-icon-final.png"
           alt="CampusHub Logo"
           width={80}
           height={80}
-          className="w-full h-full object-contain dark:hidden"
+          className="w-full h-full object-contain"
           priority
         />
-        {/* Dark Mode Official Brand Mark */}
+      </div>
+      {/* Dark mode icon — white graduation cap, no black hat */}
+      <div className={`relative ${iconSize} shrink-0 transition-transform duration-200 group-hover:scale-105 hidden dark:block`}>
         <Image
-          src="/brand/app-icon-dark.png"
+          src="/brand/app-icon-dark-final.png"
           alt="CampusHub Logo"
           width={80}
           height={80}
-          className="w-full h-full object-contain hidden dark:block"
+          className="w-full h-full object-contain"
           priority
         />
       </div>
 
-      {/* Wordmark Lockup */}
+      {/* Wordmark + optional tagline */}
       {variant !== "icon" && (
         <div className="flex flex-col justify-center">
-          <div className={`flex items-baseline font-bold tracking-tight leading-none ${textSize}`}>
-            <span className="text-kalvium-text dark:text-kalvium-dark-text transition-colors">
+          <div className={`flex items-baseline font-extrabold tracking-tight leading-none ${textSize}`}>
+            <span className="text-kalvium-text dark:text-white transition-colors">
               Campus
             </span>
-            <span className="text-kalvium-coral ml-0.5">
-              Hub
-            </span>
+            <span className="text-kalvium-coral">Hub</span>
           </div>
 
-          {/* Official Tagline: DISCOVER • ORGANIZE • BELONG */}
+          {/* Tagline: DISCOVER • ORGANIZE • BELONG */}
           {(showTagline || variant === "horizontal") && (
             <div
-              className={`mt-1 font-sans font-bold uppercase text-kalvium-muted dark:text-kalvium-dark-muted flex items-center gap-1.5 ${taglineSize}`}
+              className={`mt-1.5 font-sans font-bold uppercase text-kalvium-muted dark:text-kalvium-dark-muted flex items-center gap-1.5 ${taglineSize}`}
             >
               <span>DISCOVER</span>
               <span className="text-kalvium-coral text-[6px]">•</span>
