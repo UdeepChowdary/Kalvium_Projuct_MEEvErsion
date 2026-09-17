@@ -33,6 +33,7 @@ model Event {
   venue              String
   organizerName      String?
   posterUrl          String
+  originalPosterUrl  String?
   category           String            // Workshop, Hackathon, Cultural, Technical, Sports, Seminar, Competition, Club, Fest
   tags               String?           // Comma separated or JSON string
   registrationUrl    String?

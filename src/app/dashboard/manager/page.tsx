@@ -458,7 +458,7 @@ export default function CampusManagerVerificationQueue() {
                         Original Poster Truth
                       </span>
                       <a
-                        href={selectedEvent.posterUrl}
+                        href={selectedEvent.originalPosterUrl || selectedEvent.posterUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[11px] font-semibold text-kalvium-coral hover:underline flex items-center gap-1"
@@ -469,7 +469,7 @@ export default function CampusManagerVerificationQueue() {
 
                     <div className="rounded-2xl overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-sm group relative">
                       <img
-                        src={selectedEvent.posterUrl}
+                        src={selectedEvent.originalPosterUrl || selectedEvent.posterUrl}
                         alt="Original Poster"
                         className="w-full h-auto object-cover max-h-[480px] transition-transform duration-500 ease-out-expo group-hover:scale-[1.02] will-change-transform"
                       />

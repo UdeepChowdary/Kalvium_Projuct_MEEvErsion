@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       venue,
       organizerName,
       posterUrl,
+      originalPosterUrl,
       category,
       tags,
       registrationUrl,
@@ -71,6 +72,14 @@ export async function POST(req: NextRequest) {
     ) {
       auditSnapshot.posterUrl = `[base64-image-data-length-${auditSnapshot.posterUrl.length}]`;
     }
+    
+    if (
+      auditSnapshot.originalPosterUrl &&
+      typeof auditSnapshot.originalPosterUrl === "string" &&
+      auditSnapshot.originalPosterUrl.startsWith("data:")
+    ) {
+      auditSnapshot.originalPosterUrl = `[base64-image-data-length-${auditSnapshot.originalPosterUrl.length}]`;
+    }
 
     // Atomically create event and analysis record
     const event = await prisma.event.create({
@@ -84,6 +93,7 @@ export async function POST(req: NextRequest) {
         venue: venue.trim(),
         organizerName: organizerName ? organizerName.trim() : user.name,
         posterUrl: resolvedPoster,
+        originalPosterUrl: originalPosterUrl || null,
         category: category.trim(),
         tags: formattedTags,
         registrationUrl: safeRegistrationUrl,

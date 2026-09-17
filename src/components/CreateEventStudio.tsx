@@ -120,6 +120,7 @@ export default function CreateEventStudio({
 
   // Poster / Thumbnail Image state
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
+  const [originalAIPoster, setOriginalAIPoster] = useState<string | null>(null);
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [customThumbnailUrl, setCustomThumbnailUrl] = useState<string>("");
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
@@ -227,6 +228,7 @@ export default function CreateEventStudio({
     reader.onload = (e) => {
       const base64 = e.target?.result as string;
       setPosterPreview(base64);
+      setOriginalAIPoster(base64);
       startAnalysis({ imageData: base64, mimeType: file.type });
     };
     reader.readAsDataURL(file);
@@ -266,6 +268,7 @@ export default function CreateEventStudio({
     setSelectedSampleId(sample.id);
     setPosterFile(null);
     setPosterPreview(sample.previewUrl);
+    setOriginalAIPoster(sample.previewUrl);
     startAnalysis({ sampleId: sample.id, posterUrl: sample.previewUrl });
   };
 
@@ -385,6 +388,7 @@ export default function CreateEventStudio({
         body: JSON.stringify({
           ...formData,
           posterUrl: finalPoster,
+          originalPosterUrl: originalAIPoster,
           confidences: payloadConfidences,
           duplicatesDetected: duplicateWarning || conflictResult,
         }),
@@ -409,6 +413,143 @@ export default function CreateEventStudio({
       setSubmitting(false);
     }
   };
+
+  // Reusable Thumbnail / Banner Selector UI
+  const ThumbnailSelectorUI = (
+    <div className="bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border rounded-3xl p-6 shadow-soft-sm space-y-5">
+      <div>
+        <h4 className="text-sm font-display font-bold text-kalvium-text dark:text-kalvium-dark-text flex items-center gap-2 mb-1">
+          <ImageIcon className="w-4 h-4 text-kalvium-coral" />
+          Event Thumbnail / Banner
+        </h4>
+        <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted">
+          Upload custom artwork, paste an image URL, or pick from curated campus banners.
+        </p>
+      </div>
+
+      {/* Thumbnail Preview Box */}
+      <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border group">
+        {posterPreview ? (
+          <>
+            <img
+              src={posterPreview}
+              alt="Event Thumbnail Preview"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPosterPreview(null);
+                setPosterFile(null);
+                setSelectedPresetId(null);
+                setCustomThumbnailUrl("");
+              }}
+              className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors shadow-sm"
+              title="Remove thumbnail"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-[10px] text-white font-medium">
+              Live Card Preview
+            </div>
+          </>
+        ) : (
+          <div
+            onClick={() => manualFileInputRef.current?.click()}
+            className="w-full h-full flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-kalvium-coral-tint/20 transition-colors"
+          >
+            <Upload className="w-8 h-8 text-kalvium-coral mb-2" />
+            <p className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text">
+              Upload Thumbnail or Banner Image
+            </p>
+            <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-1">
+              PNG, JPG, WebP up to 6MB
+            </p>
+          </div>
+        )}
+
+        <input
+          type="file"
+          ref={manualFileInputRef}
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handleManualThumbnailFile(e.target.files[0]);
+            }
+          }}
+          accept="image/png,image/jpeg,image/jpg,image/webp"
+          className="hidden"
+        />
+      </div>
+
+      {/* Direct Image URL Option */}
+      <div>
+        <label className="block text-[11px] font-bold text-kalvium-muted dark:text-kalvium-dark-muted uppercase tracking-wider mb-1">
+          Or Enter Direct Image URL
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={customThumbnailUrl}
+            onChange={(e) => {
+              setCustomThumbnailUrl(e.target.value);
+              if (e.target.value.trim().startsWith("http")) {
+                setPosterPreview(e.target.value.trim());
+                setSelectedPresetId(null);
+              }
+            }}
+            placeholder="https://images.unsplash.com/..."
+            className="flex-1 bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border rounded-xl px-3 py-2 text-xs text-kalvium-text dark:text-kalvium-dark-text focus:outline-none focus:border-kalvium-coral"
+          />
+          {posterPreview && (
+            <button
+              type="button"
+              onClick={() => manualFileInputRef.current?.click()}
+              className="px-3 py-2 rounded-xl border border-kalvium-border dark:border-kalvium-dark-border text-xs font-semibold hover:border-kalvium-coral transition-colors"
+            >
+              Change
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Curated Preset Campus Banners */}
+      <div className="space-y-2 pt-2 border-t border-kalvium-border dark:border-kalvium-dark-border">
+        <span className="text-[11px] font-bold text-kalvium-muted uppercase tracking-wider block">
+          Or Pick from Campus Preset Banners:
+        </span>
+        <div className="grid grid-cols-3 gap-2">
+          {PRESET_THUMBNAILS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handleSelectPresetThumbnail(preset)}
+              className={`group relative rounded-xl overflow-hidden aspect-[4/3] border transition-all text-left ${
+                selectedPresetId === preset.id
+                  ? "border-kalvium-coral ring-2 ring-kalvium-coral/30"
+                  : "border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral/50"
+              }`}
+            >
+              <img
+                src={preset.url}
+                alt={preset.label}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 flex items-end">
+                <span className="text-[9px] font-bold text-white line-clamp-1 leading-tight">
+                  {preset.label}
+                </span>
+              </div>
+              {selectedPresetId === preset.id && (
+                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-kalvium-coral text-white flex items-center justify-center shadow">
+                  <Check className="w-2.5 h-2.5" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -445,139 +586,7 @@ export default function CreateEventStudio({
           <form onSubmit={handleSubmitForVerification} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Column: Thumbnail / Poster Artwork Setup */}
             <div className="lg:col-span-5 space-y-6">
-              <div className="bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border rounded-3xl p-6 shadow-soft-sm space-y-5">
-                <div>
-                  <h4 className="text-sm font-display font-bold text-kalvium-text dark:text-kalvium-dark-text flex items-center gap-2 mb-1">
-                    <ImageIcon className="w-4 h-4 text-kalvium-coral" />
-                    Event Thumbnail / Poster
-                  </h4>
-                  <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted">
-                    Upload custom artwork, paste an image URL, or pick from curated campus banners.
-                  </p>
-                </div>
-
-                {/* Thumbnail Preview Box */}
-                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border group">
-                  {posterPreview ? (
-                    <>
-                      <img
-                        src={posterPreview}
-                        alt="Event Thumbnail Preview"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPosterPreview(null);
-                          setPosterFile(null);
-                          setSelectedPresetId(null);
-                          setCustomThumbnailUrl("");
-                        }}
-                        className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors shadow-sm"
-                        title="Remove thumbnail"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-[10px] text-white font-medium">
-                        Live Card Preview
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      onClick={() => manualFileInputRef.current?.click()}
-                      className="w-full h-full flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-kalvium-coral-tint/20 transition-colors"
-                    >
-                      <Upload className="w-8 h-8 text-kalvium-coral mb-2" />
-                      <p className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text">
-                        Upload Thumbnail Image
-                      </p>
-                      <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-1">
-                        PNG, JPG, WebP up to 6MB
-                      </p>
-                    </div>
-                  )}
-
-                  <input
-                    type="file"
-                    ref={manualFileInputRef}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleManualThumbnailFile(e.target.files[0]);
-                      }
-                    }}
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Direct Image URL Option */}
-                <div>
-                  <label className="block text-[11px] font-bold text-kalvium-muted dark:text-kalvium-dark-muted uppercase tracking-wider mb-1">
-                    Or Enter Direct Image URL
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={customThumbnailUrl}
-                      onChange={(e) => {
-                        setCustomThumbnailUrl(e.target.value);
-                        if (e.target.value.trim().startsWith("http")) {
-                          setPosterPreview(e.target.value.trim());
-                          setSelectedPresetId(null);
-                        }
-                      }}
-                      placeholder="https://images.unsplash.com/..."
-                      className="flex-1 bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border rounded-xl px-3 py-2 text-xs text-kalvium-text dark:text-kalvium-dark-text focus:outline-none focus:border-kalvium-coral"
-                    />
-                    {posterPreview && (
-                      <button
-                        type="button"
-                        onClick={() => manualFileInputRef.current?.click()}
-                        className="px-3 py-2 rounded-xl border border-kalvium-border dark:border-kalvium-dark-border text-xs font-semibold hover:border-kalvium-coral transition-colors"
-                      >
-                        Change
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Curated Preset Campus Banners */}
-                <div className="space-y-2 pt-2 border-t border-kalvium-border dark:border-kalvium-dark-border">
-                  <span className="text-[11px] font-bold text-kalvium-muted uppercase tracking-wider block">
-                    Or Pick from Campus Preset Banners:
-                  </span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {PRESET_THUMBNAILS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPresetThumbnail(preset)}
-                        className={`group relative rounded-xl overflow-hidden aspect-[4/3] border transition-all text-left ${
-                          selectedPresetId === preset.id
-                            ? "border-kalvium-coral ring-2 ring-kalvium-coral/30"
-                            : "border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral/50"
-                        }`}
-                      >
-                        <img
-                          src={preset.url}
-                          alt={preset.label}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-1.5 flex items-end">
-                          <span className="text-[9px] font-bold text-white line-clamp-1 leading-tight">
-                            {preset.label}
-                          </span>
-                        </div>
-                        {selectedPresetId === preset.id && (
-                          <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-kalvium-coral text-white flex items-center justify-center shadow">
-                            <Check className="w-2.5 h-2.5" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {ThumbnailSelectorUI}
 
               {/* Real-time Schedule Conflict Status Pill */}
               <div className="p-4 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs text-xs space-y-1">
@@ -1073,18 +1082,7 @@ export default function CreateEventStudio({
               <form onSubmit={handleSubmitForVerification} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left: Original Poster Preview + AI Confidence Overview */}
                 <div className="lg:col-span-5 space-y-6 animate-scale-in">
-                  <div className="rounded-2xl overflow-hidden bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border p-2 shadow-kalvium-sm group">
-                    <span className="text-[10px] font-sans text-kalvium-muted uppercase tracking-wider block mb-2 px-2 pt-1 font-bold">
-                      Original Uploaded Poster Truth
-                    </span>
-                    {posterPreview && (
-                      <img
-                        src={posterPreview}
-                        alt="Event Poster"
-                        className="w-full h-auto rounded-xl object-cover max-h-[480px] transition-transform duration-500 group-hover:scale-[1.01]"
-                      />
-                    )}
-                  </div>
+                  {ThumbnailSelectorUI}
 
                   {/* Confidence Ratings Card */}
                   <div className="p-5 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border space-y-3 shadow-kalvium-sm">

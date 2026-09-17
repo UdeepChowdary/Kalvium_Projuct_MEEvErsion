@@ -42,31 +42,50 @@ export default function CampusHubLogo({
     xl: "text-xs tracking-[0.22em]",
   }[size];
 
+  const iconWidth = {
+    sm: "w-9",
+    md: "w-11",
+    lg: "w-14",
+    xl: "w-18",
+  }[size];
+
+  const textHeight = {
+    sm: "h-[20px]",
+    md: "h-[24px]",
+    lg: "h-[30px]",
+    xl: "h-[36px]",
+  }[size];
+
+  const wrapperHeight = variant === "icon" ? iconSize.split(" ")[1] : textHeight;
+
+  const iconOffset = {
+    sm: "translate-y-0.5",
+    md: "translate-y-1",
+    lg: "translate-y-1.5",
+    xl: "translate-y-2",
+  }[size];
+
   return (
-    /*
-     * items-end → bottom of icon aligns with text baseline
-     * graduation cap naturally overhangs above, exactly like the reference
-     */
-    <div className={`inline-flex items-center gap-0.5 select-none ${className}`}>
+    <div className={`inline-flex items-start gap-0.5 select-none ${className}`}>
       {/* Light mode icon — dark graduation cap */}
-      <div className={`relative ${iconSize} shrink-0 transition-transform duration-200 group-hover:scale-105 dark:hidden`}>
+      <div className={`relative ${iconWidth} ${wrapperHeight} shrink-0 dark:hidden`}>
         <Image
           src="/brand/app-icon-final.png"
           alt="CampusHub Logo"
           width={80}
           height={80}
-          className="w-full h-full object-contain"
+          className={`absolute bottom-0 left-0 ${iconSize} ${iconOffset} object-contain transition-transform duration-200 group-hover:scale-105`}
           priority
         />
       </div>
       {/* Dark mode icon — white graduation cap, no black hat */}
-      <div className={`relative ${iconSize} shrink-0 transition-transform duration-200 group-hover:scale-105 hidden dark:block`}>
+      <div className={`relative ${iconWidth} ${wrapperHeight} shrink-0 hidden dark:block`}>
         <Image
           src="/brand/app-icon-dark-final.png"
           alt="CampusHub Logo"
           width={80}
           height={80}
-          className="w-full h-full object-contain"
+          className={`absolute bottom-0 left-0 ${iconSize} ${iconOffset} object-contain transition-transform duration-200 group-hover:scale-105`}
           priority
         />
       </div>
