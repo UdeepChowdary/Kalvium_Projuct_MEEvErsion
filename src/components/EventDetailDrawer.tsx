@@ -172,7 +172,7 @@ export default function EventDetailDrawer({
               <img
                 src={event.posterUrl}
                 alt={event.title}
-                className="w-full h-auto object-cover max-h-[380px] transition-transform duration-500 ease-editorial group-hover:scale-[1.015]"
+                className="w-full h-auto object-contain max-h-[500px] transition-transform duration-500 ease-editorial group-hover:scale-[1.015]"
               />
               {startingSoon && (
                 <div className="absolute top-3 left-3">
