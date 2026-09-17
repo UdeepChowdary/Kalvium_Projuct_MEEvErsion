@@ -234,7 +234,7 @@ export async function analyzeEventPoster(
   if (apiKey && imageBufferOrBase64 && imageBufferOrBase64.length > 100) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
 
       const prompt = `You are the Campus Event Hub AI Poster Analyzer.
 Analyze the provided campus event poster image and extract event details.
@@ -336,8 +336,9 @@ Respond with ONLY the JSON object. Do not include markdown codeblocks or convers
         disclaimer:
           "AI confidence indicates extraction certainty only. Legitimate approval is determined exclusively by the Campus Manager.",
       };
-    } catch (geminiError) {
-      console.warn("Gemini vision analysis had an issue, falling back to local extractor:", geminiError);
+    } catch (geminiError: any) {
+      console.error("❌ Gemini vision analysis failed:", geminiError?.message || geminiError);
+      console.error("   → Falling back to local extractor. Check GEMINI_API_KEY in .env and restart dev server.");
     }
   }
 
