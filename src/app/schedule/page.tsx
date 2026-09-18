@@ -306,11 +306,12 @@ function ScheduleItemCard({
 
           <button
             onClick={() => onUnsave(event.id)}
-            className="text-kalvium-muted hover:text-kalvium-coral p-1.5 rounded-full hover:bg-kalvium-surface-alt dark:hover:bg-kalvium-dark-surface-alt transition active:scale-90"
+            className="flex items-center gap-1.5 text-kalvium-muted hover:text-kalvium-coral px-2.5 py-1 rounded-full hover:bg-kalvium-surface-alt dark:hover:bg-kalvium-dark-surface-alt transition active:scale-90"
             title="Remove from schedule"
             aria-label="Remove from schedule"
           >
-            <BookmarkX size={15} />
+            <BookmarkX size={14} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Remove</span>
           </button>
         </div>
 

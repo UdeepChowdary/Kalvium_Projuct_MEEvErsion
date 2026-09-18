@@ -36,7 +36,11 @@ export function isValidSafeUrl(urlStr: string | null | undefined): boolean {
 
   try {
     const parsed = new URL(trimmed);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    return (
+      parsed.protocol === "http:" || 
+      parsed.protocol === "https:" || 
+      (parsed.protocol === "data:" && trimmed.startsWith("data:image/"))
+    );
   } catch {
     // Allow root-relative paths e.g. /posters/...
     return trimmed.startsWith("/");

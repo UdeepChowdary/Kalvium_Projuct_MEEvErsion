@@ -175,12 +175,12 @@ export default function EventDetailPage() {
         initial={{ clipPath: "inset(0 0 100% 0)" }}
         animate={{ clipPath: "inset(0 0 0% 0)" }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-        className="relative aspect-[16/9] w-full overflow-hidden rounded-3xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-kalvium-md"
+        className="relative w-full flex justify-center overflow-hidden rounded-3xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-kalvium-md"
       >
         <img
           src={event.posterUrl}
           alt={event.title}
-          className="h-full w-full object-cover"
+          className="w-full h-auto max-h-[600px] object-contain"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 

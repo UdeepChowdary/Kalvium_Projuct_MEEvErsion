@@ -10,6 +10,7 @@ import {
   Sparkles,
   RefreshCw,
   PenTool,
+  Trash2,
 } from "lucide-react";
 import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
 import CreateEventStudio from "@/components/CreateEventStudio";
@@ -35,6 +36,26 @@ export default function OrganizerDashboardPage() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
+    
+    try {
+      const res = await fetch(`/api/organizer/events/${eventId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        alert("Event deleted successfully");
+        fetchOrganizerData();
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to delete event: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while deleting the event");
     }
   };
 
@@ -272,6 +293,13 @@ export default function OrganizerDashboardPage() {
                           Public Page →
                         </Link>
                       )}
+                      <button
+                        onClick={() => handleDeleteEvent(ev.id)}
+                        className="p-2 rounded-full text-kalvium-muted hover:text-kalvium-coral bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt hover:bg-white dark:hover:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border transition shadow-soft-xs active:scale-95"
+                        title="Delete Event"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
 

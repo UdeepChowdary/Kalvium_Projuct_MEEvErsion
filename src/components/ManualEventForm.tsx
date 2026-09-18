@@ -113,10 +113,14 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
 
   const handleManualThumbnailFile = (file: File) => {
     setPosterFile(file);
-    const objectUrl = URL.createObjectURL(file);
-    setPosterPreview(objectUrl);
     setCustomThumbnailUrl("");
     setSelectedPresetId(null);
+    // Use FileReader to get a persistent base64 data URL (blob: URLs are ephemeral)
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPosterPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSelectPresetThumbnail = (presetId: string, imgUrl: string) => {
@@ -207,10 +211,10 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
             <div>
               <h4 className="text-sm font-display font-bold text-kalvium-text dark:text-kalvium-dark-text flex items-center gap-2 mb-1">
                 <ImageIcon className="w-4 h-4 text-kalvium-coral" />
-                Event Thumbnail / Banner
+                Event Poster / Banner
               </h4>
               <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted">
-                Upload custom artwork, paste an image URL, or pick from curated campus banners.
+                Upload your event poster — this image will appear on the public event card and detail page.
               </p>
             </div>
 
@@ -218,17 +222,19 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
             <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border group">
               {posterPreview ? (
                 <>
-                  <img src={posterPreview} alt="Event Thumbnail Preview" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+                  <img src={posterPreview} alt="Event Poster Preview" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
                   <button
                     type="button"
                     onClick={() => { setPosterPreview(null); setPosterFile(null); setSelectedPresetId(null); setCustomThumbnailUrl(""); }}
                     className="absolute top-2.5 right-2.5 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors shadow-sm"
-                    title="Remove thumbnail"
+                    title="Remove poster"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-[10px] text-white font-medium">
-                    Live Card Preview
+                  <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[10px] text-white font-medium ${
+                    posterFile ? "bg-kalvium-coral/90" : "bg-black/60"
+                  }`}>
+                    {posterFile ? "✓ Event Poster · Uploaded" : "Preset Banner · Preview"}
                   </div>
                 </>
               ) : (
@@ -237,8 +243,8 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
                   className="w-full h-full flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-kalvium-coral-tint/20 transition-colors"
                 >
                   <Upload className="w-8 h-8 text-kalvium-coral mb-2" />
-                  <p className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text">Upload Thumbnail or Banner Image</p>
-                  <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-1">PNG, JPG, WebP up to 6MB</p>
+                  <p className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text">Upload Event Poster</p>
+                  <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-1">This becomes the public event image · PNG, JPG, WebP up to 6MB</p>
                 </div>
               )}
               <input
