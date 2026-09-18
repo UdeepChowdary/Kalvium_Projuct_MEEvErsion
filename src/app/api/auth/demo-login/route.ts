@@ -62,10 +62,13 @@ export async function POST(req: NextRequest) {
     setAuthCookie(response, token);
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Demo login error:", error);
     return NextResponse.json(
-      { error: "Internal server error during demo login." },
+      { 
+        error: "Internal server error during demo login.", 
+        details: error?.message || String(error)
+      },
       { status: 500 }
     );
   }
