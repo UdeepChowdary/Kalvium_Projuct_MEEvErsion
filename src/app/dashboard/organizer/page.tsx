@@ -11,14 +11,16 @@ import {
   RefreshCw,
   PenTool,
   Trash2,
+  ShieldCheck,
 } from "lucide-react";
 import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
 import CreateEventStudio from "@/components/CreateEventStudio";
 import ManualEventForm from "@/components/ManualEventForm";
 import { useAuth } from "@/context/AuthContext";
+import { getTimeGreeting } from "@/lib/time";
 
 export default function OrganizerDashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"SUBMISSIONS" | "CREATE_AI" | "CREATE_MANUAL">("SUBMISSIONS");
@@ -63,13 +65,21 @@ export default function OrganizerDashboardPage() {
     fetchOrganizerData();
   }, [user]);
 
-  if (!user || user.role === "STUDENT") {
+  if (authLoading) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-kalvium-coral border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user || user.role?.toUpperCase() === "STUDENT") {
     return (
       <div className="max-w-md mx-auto px-4 py-24 text-center">
         <div className="p-8 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-kalvium-md">
           <p className="text-base font-bold text-kalvium-text dark:text-kalvium-dark-text mb-2">Organizer Access Required</p>
           <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted mb-6">
-            Please log in as an Organizer or switch to "Robotics Club (Organizer)" using the top demo bar.
+            Please log in with an Organizer account to access this portal.
           </p>
           <Link
             href="/login"
@@ -90,18 +100,36 @@ export default function OrganizerDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <span className="text-xs font-sans uppercase tracking-widest text-kalvium-text dark:text-kalvium-dark-text font-bold bg-kalvium-bg dark:bg-kalvium-dark-surface px-3 py-1 rounded-full border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
-            Organizer Studio
+          <span className="text-xs font-sans uppercase tracking-widest text-kalvium-coral dark:text-kalvium-coral font-bold bg-kalvium-bg dark:bg-kalvium-dark-surface px-3 py-1 rounded-full border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs inline-flex items-center gap-1.5">
+            {user?.role?.toUpperCase() === "CAMPUS_MANAGER" ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-kalvium-success" />
+                <span>Manager's Portal</span>
+              </>
+            ) : (
+              <span>Organizer's Portal</span>
+            )}
           </span>
           <h1 className="text-3xl sm:text-4xl font-display font-bold text-kalvium-text dark:text-kalvium-dark-text tracking-tight mt-1.5">
-            {user.name}
+            {getTimeGreeting()}, {user.name}
           </h1>
           <p className="text-xs sm:text-sm text-kalvium-muted dark:text-kalvium-dark-muted mt-1">
-            Create events manually, monitor review queues, and track campus verification.
+            {user?.role?.toUpperCase() === "CAMPUS_MANAGER"
+              ? "Create campus events directly, manage submissions, and review verification queues."
+              : "Create events manually, monitor review queues, and track campus verification."}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {user?.role?.toUpperCase() === "CAMPUS_MANAGER" && (
+            <Link
+              href="/dashboard/manager"
+              className="px-4 py-2.5 rounded-full border border-kalvium-success/30 bg-kalvium-success-tint dark:bg-kalvium-dark-success-tint text-kalvium-success text-xs font-bold shadow-soft-xs transition shrink-0 active:scale-95 flex items-center gap-1.5 hover:bg-kalvium-success hover:text-white"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Verification Center →</span>
+            </Link>
+          )}
           {activeTab !== "SUBMISSIONS" && (
             <button
               onClick={() => setActiveTab("SUBMISSIONS")}

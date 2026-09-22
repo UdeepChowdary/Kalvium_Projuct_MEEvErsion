@@ -1,180 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { prisma } from "./prisma";
+import { adminDb } from "./firebase/admin";
 import { parseTimeToMinutes } from "./clash";
-
-export type ConfidenceLevel = "HIGH" | "MEDIUM" | "LOW";
-
-export interface FieldConfidence {
-  field: string;
-  level: ConfidenceLevel;
-  reason?: string;
-}
-
-export interface ExtractedEventData {
-  title: string;
-  date: string;           // YYYY-MM-DD
-  startTime: string;      // e.g. "10:00 AM"
-  endTime: string;        // e.g. "01:00 PM"
-  venue: string;
-  organizerName: string;
-  category: string;
-  description: string;
-  summary: string;
-  tags: string[];
-  registrationUrl: string;
-  contactInfo: string;
-  confidences: Record<string, ConfidenceLevel>;
-  confidenceDetails: FieldConfidence[];
-  disclaimer: string;
-}
-
-export interface DuplicateCheckResult {
-  hasPotentialDuplicate: boolean;
-  matchedEvent?: {
-    id: string;
-    title: string;
-    date: string;
-    startTime: string;
-    venue: string;
-    organizerName?: string | null;
-  };
-  reason?: string;
-}
-
-/**
- * Pre-defined rich demo posters with real campus scenarios
- * allowing immediate 1-click test uploads if the user doesn't have an image ready.
- */
-export const SAMPLE_POSTERS = [
-  {
-    id: "sample-ai-robotics",
-    name: "AI & Robotics Workshop",
-    category: "Workshop",
-    filename: "poster-ai-workshop.png",
-    previewUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80",
-    extractedData: {
-      title: "AI & Robotics Hands-on Workshop",
-      date: "2026-09-11",
-      startTime: "10:00 AM",
-      endTime: "01:00 PM",
-      venue: "Innovation Lab, 3rd Floor Engineering Block",
-      organizerName: "Robotics & AI Society",
-      category: "Workshop",
-      summary: "A practical 3-hour deep dive into autonomous robotic navigation and edge AI deployment.",
-      description: "Join the Robotics & AI Society for an intensive, hands-on workshop on building and programming autonomous mobile robots. Participants will implement computer vision tracking algorithms on edge microcontrollers and test their bots on our custom obstacle course. All microcontrollers and sensor kits provided on site.",
-      tags: ["Artificial Intelligence", "Robotics", "Hardware", "Edge Computing", "Open Source"],
-      registrationUrl: "https://campus-hub.edu/register/robotics-2026",
-      contactInfo: "robotics-leads@campus.edu | Lab Coordinator: Room E-304",
-      confidences: {
-        title: "HIGH",
-        date: "HIGH",
-        startTime: "HIGH",
-        endTime: "MEDIUM",
-        venue: "HIGH",
-        organizerName: "HIGH",
-        category: "HIGH",
-        registrationUrl: "MEDIUM",
-        contactInfo: "LOW",
-      },
-    }
-  },
-  {
-    id: "sample-hackathon",
-    name: "Campus Hack 2026 (Clash Candidate)",
-    category: "Hackathon",
-    filename: "poster-hackathon.png",
-    previewUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=80",
-    extractedData: {
-      title: "Campus Hack 2026: 24h Build Sprint",
-      date: "2026-09-11", // Same date as Workshop (for testing clash!)
-      startTime: "11:30 AM", // 11:30 AM clashes with 10:00 AM - 1:00 PM!
-      endTime: "05:00 PM",
-      venue: "Main Auditorium & Innovation Foyer",
-      organizerName: "Developer Student Club",
-      category: "Hackathon",
-      summary: "24-hour university hackathon focused on AI agents, civic tech, and sustainable computing.",
-      description: "Campus Hack 2026 brings together over 200 student developers, designers, and thinkers to craft high-impact solutions across AI, decentralized networks, and campus climate tools. Mentorship from alumni engineers, high-speed WiFi, and 24-hour food stations provided.",
-      tags: ["Hackathon", "Coding", "Innovation", "Startups", "Prizes"],
-      registrationUrl: "https://campushack2026.dev",
-      contactInfo: "hackathon@campus.edu",
-      confidences: {
-        title: "HIGH",
-        date: "HIGH",
-        startTime: "HIGH",
-        endTime: "MEDIUM",
-        venue: "HIGH",
-        organizerName: "HIGH",
-        category: "HIGH",
-        registrationUrl: "HIGH",
-        contactInfo: "MEDIUM",
-      }
-    }
-  },
-  {
-    id: "sample-cultural-fest",
-    name: "Campus Cultural Fest: Harmony 2026",
-    category: "Cultural",
-    filename: "poster-harmony-fest.png",
-    previewUrl: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&auto=format&fit=crop&q=80",
-    extractedData: {
-      title: "Harmony 2026: Annual Inter-College Fest",
-      date: "2026-09-15",
-      startTime: "05:00 PM",
-      endTime: "10:00 PM",
-      venue: "University Open-Air Amphitheatre",
-      organizerName: "Campus Cultural Board",
-      category: "Cultural",
-      summary: "The flagship campus music and arts celebration featuring live student bands, food stalls, and creative exhibitions.",
-      description: "Harmony 2026 is our annual signature cultural evening featuring student acoustic ensembles, indie rock bands, theatrical skits, and student art installations across the amphitheatre lawn. Free admission for all students with valid campus ID.",
-      tags: ["Music", "Dance", "Arts", "Festival", "Live Performance"],
-      registrationUrl: "Not specified",
-      contactInfo: "cultural@campus.edu",
-      confidences: {
-        title: "HIGH",
-        date: "HIGH",
-        startTime: "HIGH",
-        endTime: "LOW",
-        venue: "HIGH",
-        organizerName: "MEDIUM",
-        category: "HIGH",
-        registrationUrl: "LOW",
-        contactInfo: "MEDIUM",
-      }
-    }
-  },
-  {
-    id: "sample-design-sprint",
-    name: "UI/UX Product Design Sprint",
-    category: "Technical",
-    filename: "poster-design-sprint.png",
-    previewUrl: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80",
-    extractedData: {
-      title: "UI/UX Product Design Sprint: Crafting High-Taste UIs",
-      date: "2026-09-12",
-      startTime: "02:00 PM",
-      endTime: "05:00 PM",
-      venue: "Design Studio Room 402",
-      organizerName: "Design & UX Guild",
-      category: "Technical",
-      summary: "Hands-on product design sprint exploring design systems, micro-interactions, and Figma to code pipelines.",
-      description: "Learn how to build editorial-grade digital interfaces with a focus on hierarchy, spacing systems, and interactive prototypes. Students will design a live product screen from scratch and receive direct critiques.",
-      tags: ["UI/UX", "Product Design", "Figma", "Design Systems"],
-      registrationUrl: "https://campus-hub.edu/design-sprint",
-      contactInfo: "uxguild@campus.edu",
-      confidences: {
-        title: "HIGH",
-        date: "HIGH",
-        startTime: "HIGH",
-        endTime: "HIGH",
-        venue: "MEDIUM",
-        organizerName: "HIGH",
-        category: "HIGH",
-        registrationUrl: "HIGH",
-        contactInfo: "LOW",
-      }
-    }
-  }
-];
+import { 
+  ConfidenceLevel, 
+  FieldConfidence, 
+  ExtractedEventData, 
+  DuplicateCheckResult, 
+  SAMPLE_POSTERS 
+} from "./ai-poster-constants";
 
 /**
  * Sanitizes an extracted value, replacing null / undefined / empty / "null" strings
@@ -192,6 +25,27 @@ function sanitizeExtractedValue(value: any, field: string): string {
     return "Not specified";
   }
   return strVal;
+}
+
+function getGeminiApiKey(): string | undefined {
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) {
+    return process.env.GEMINI_API_KEY.trim();
+  }
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const envPath = path.resolve(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      const match = content.match(/GEMINI_API_KEY=["']?([^"'\r\n]+)/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
 }
 
 /**
@@ -230,11 +84,19 @@ export async function analyzeEventPoster(
   }
 
   // Attempt Gemini Vision API analysis for real image data
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (apiKey && imageBufferOrBase64 && imageBufferOrBase64.length > 100) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+      const CANDIDATE_MODELS = [
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-2.5-pro",
+        "gemini-flash-lite-latest",
+        "gemini-pro-latest"
+      ];
 
       const prompt = `You are the Campus Event Hub AI Poster Analyzer.
 Analyze the provided campus event poster image and extract event details.
@@ -288,9 +150,30 @@ Respond with ONLY the JSON object. Do not include markdown codeblocks or convers
         },
       };
 
-      const result = await model.generateContent([prompt, imagePart]);
+      let result: any = null;
+      let lastModelError: any = null;
+      for (const modelName of CANDIDATE_MODELS) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Timeout after 12s on ${modelName}`)), 12000)
+          );
+          result = await Promise.race([model.generateContent([prompt, imagePart]), timeoutPromise]);
+          console.log(`✓ Poster extraction succeeded via ${modelName}`);
+          break;
+        } catch (modelErr: any) {
+          lastModelError = modelErr;
+          console.warn(`Vision model ${modelName} failed (${modelErr?.message || modelErr}), trying fallback...`);
+        }
+      }
+
+      if (!result) {
+        throw new Error(`All Gemini vision candidate models failed. Last error: ${lastModelError?.message || "Unknown error"}`);
+      }
+
       const responseText = result.response.text().trim();
-      const cleanedJson = responseText.replace(/```json\s*|\s*```/g, "").trim();
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      const cleanedJson = jsonMatch ? jsonMatch[0] : responseText.replace(/```json\s*|\s*```/g, "").trim();
       const parsed = JSON.parse(cleanedJson);
 
       const confidences: Record<string, ConfidenceLevel> = {
@@ -338,12 +221,14 @@ Respond with ONLY the JSON object. Do not include markdown codeblocks or convers
       };
     } catch (geminiError: any) {
       console.error("❌ Gemini vision analysis failed:", geminiError?.message || geminiError);
-      console.error("   → Falling back to local extractor. Check GEMINI_API_KEY in .env and restart dev server.");
+      // If user uploaded a custom image (not a sample), throw descriptive error so UI explains accurately
+      if (!sampleId) {
+        throw new Error(geminiError?.message || "Vision extraction could not read the poster image.");
+      }
     }
   }
 
   // Offline / Local Intelligent Fallback
-  // Matches realistic campus poster text patterns or returns strict anti-hallucination defaults
   return generateIntelligentFallbackExtraction(imageBufferOrBase64);
 }
 
@@ -369,48 +254,48 @@ function generateIntelligentFallbackExtraction(dataStr: string): ExtractedEventD
     }
   }
 
-  // Default calibrated extraction for custom uploaded poster
+  // Blank extraction for custom uploaded poster when automatic extraction is unavailable
   const confidences: Record<string, ConfidenceLevel> = {
-    title: "HIGH",
-    date: "HIGH",
-    startTime: "HIGH",
-    endTime: "MEDIUM",
-    venue: "HIGH",
-    organizerName: "LOW", // Marked low so organizer & manager see "Needs verification"
-    category: "HIGH",
+    title: "LOW",
+    date: "LOW",
+    startTime: "LOW",
+    endTime: "LOW",
+    venue: "LOW",
+    organizerName: "LOW",
+    category: "LOW",
     registrationUrl: "LOW",
-    contactInfo: "MEDIUM",
+    contactInfo: "LOW",
   };
 
   const confidenceDetails: FieldConfidence[] = [
-    { field: "title", level: "HIGH", reason: "Title header detected with 98% OCR certainty" },
-    { field: "date", level: "HIGH", reason: "Date format matched standard calendar layout" },
-    { field: "startTime", level: "HIGH", reason: "Start time explicitly listed" },
-    { field: "endTime", level: "MEDIUM", reason: "End time estimated from scheduled duration" },
-    { field: "venue", level: "HIGH", reason: "Room / Building identifier detected" },
-    { field: "organizerName", level: "LOW", reason: "Organizer logo detected but text is low-contrast. Needs manual verification." },
-    { field: "category", level: "HIGH", reason: "Classified based on event context" },
-    { field: "registrationUrl", level: "LOW", reason: "QR code detected, URL needs confirmation" },
-    { field: "contactInfo", level: "MEDIUM", reason: "Email address found in poster footer" },
+    { field: "title", level: "LOW", reason: "Automatic OCR extraction was unavailable. Please enter manually." },
+    { field: "date", level: "LOW", reason: "Needs manual verification." },
+    { field: "startTime", level: "LOW", reason: "Needs manual verification." },
+    { field: "endTime", level: "LOW", reason: "Needs manual verification." },
+    { field: "venue", level: "LOW", reason: "Needs manual verification." },
+    { field: "organizerName", level: "LOW", reason: "Needs manual verification." },
+    { field: "category", level: "LOW", reason: "Needs manual verification." },
+    { field: "registrationUrl", level: "LOW", reason: "Needs manual verification." },
+    { field: "contactInfo", level: "LOW", reason: "Needs manual verification." },
   ];
 
   return {
-    title: "Innovators Tech Symposium 2026",
-    date: "2026-09-14",
-    startTime: "02:00 PM",
-    endTime: "05:00 PM",
-    venue: "Turing Auditorium, Science & Technology Block",
-    organizerName: "Campus Engineering Council",
+    title: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    venue: "",
+    organizerName: "",
     category: "Technical",
-    summary: "Annual symposium showcasing student engineering projects, keynote presentations, and tech demos.",
-    description: "An open engineering symposium featuring senior design capstone presentations, student hardware demonstrations, and research paper summaries. Open to all students, faculty, and visiting industry guests.",
-    tags: ["Symposium", "Engineering", "Technology", "Showcase"],
-    registrationUrl: "https://campus-hub.edu/register/symposium2026",
-    contactInfo: "events-engineering@campus.edu",
+    summary: "",
+    description: "",
+    tags: ["Campus Event"],
+    registrationUrl: "",
+    contactInfo: "",
     confidences,
     confidenceDetails,
     disclaimer:
-      "AI confidence indicates extraction certainty only. Legitimate approval is determined exclusively by the Campus Manager.",
+      "Automated extraction was inconclusive for this poster. Please review and fill in the event details manually before submitting.",
   };
 }
 
@@ -428,20 +313,19 @@ export async function detectDuplicateEvent(
     const normTargetTitle = normalizeForComparison(title);
     const targetStartMin = parseTimeToMinutes(startTime);
 
-    const existingEvents = await prisma.event.findMany({
-      where: {
-        date: date,
-        status: { in: ["APPROVED", "PENDING"] },
-      },
-      select: {
-        id: true,
-        title: true,
-        date: true,
-        startTime: true,
-        venue: true,
-        organizerName: true,
-      },
-    });
+    const eventsSnapshot = await adminDb.collection("events")
+      .where("date", "==", date)
+      .where("status", "in", ["APPROVED", "PENDING"])
+      .get();
+
+    const existingEvents = eventsSnapshot.docs.map((doc: any) => ({
+      id: doc.id,
+      title: doc.data().title || "",
+      date: doc.data().date,
+      startTime: doc.data().startTime || "",
+      venue: doc.data().venue || "",
+      organizerName: doc.data().organizerName,
+    }));
 
     for (const event of existingEvents) {
       const normExistingTitle = normalizeForComparison(event.title);

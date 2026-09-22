@@ -22,9 +22,14 @@ import {
   Tag,
   Link as LinkIcon,
   Mail,
+  ShieldCheck,
+  Layers,
+  XCircle,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { SAMPLE_POSTERS, ConfidenceLevel } from "@/lib/ai-poster-analyzer";
+import { auth as firebaseClientAuth } from "@/lib/firebase/client";
+import { ConfidenceLevel } from "@/lib/ai-poster-constants";
 
 const CATEGORIES = [
   "Workshop",
@@ -68,7 +73,6 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
   // Poster Image state
   const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
 
   // Extracted Event state
   const [formData, setFormData] = useState({
@@ -158,35 +162,72 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
     step,
   ]);
 
+  // Compress & optimize image on client before sending to AI (ensures sub-1MB size & high OCR clarity)
+  const compressImageForAnalysis = (file: File): Promise<{ base64: string; mimeType: string }> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawData = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 1600;
+          let { width, height } = img;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.85);
+            resolve({ base64: compressed, mimeType: "image/jpeg" });
+            return;
+          }
+          resolve({ base64: rawData, mimeType: file.type });
+        };
+        img.onerror = () => {
+          resolve({ base64: rawData, mimeType: file.type });
+        };
+        img.src = rawData;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle Drag & Drop / File Input
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       alert("Please upload a valid image file (JPG, PNG, WebP).");
       return;
     }
 
     setPosterFile(file);
-    setSelectedSampleId(null);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
+    try {
+      const { base64, mimeType } = await compressImageForAnalysis(file);
       setPosterPreview(base64);
-      startAnalysis({ imageData: base64, mimeType: file.type });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Handle 1-click Sample Poster selection
-  const handleSelectSample = (sample: (typeof SAMPLE_POSTERS)[0]) => {
-    setSelectedSampleId(sample.id);
-    setPosterFile(null);
-    setPosterPreview(sample.previewUrl);
-    startAnalysis({ sampleId: sample.id, posterUrl: sample.previewUrl });
+      startAnalysis({ imageData: base64, mimeType });
+    } catch (err) {
+      console.error("Image processing error:", err);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setPosterPreview(base64);
+        startAnalysis({ imageData: base64, mimeType: file.type });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Core AI Analysis Flow
   const startAnalysis = async (payload: {
-    sampleId?: string;
     imageData?: string;
     mimeType?: string;
     posterUrl?: string;
@@ -207,9 +248,19 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
     }, 600);
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      try {
+        const idToken = await firebaseClientAuth.currentUser?.getIdToken();
+        if (idToken) {
+          headers["Authorization"] = `Bearer ${idToken}`;
+        }
+      } catch {
+        // Continue with session cookie
+      }
+
       const res = await fetch("/api/ai/analyze-poster", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -224,18 +275,18 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
       const extracted = data.extractedData;
 
       setFormData({
-        title: extracted.title || "",
-        date: extracted.date || "",
-        startTime: extracted.startTime || "",
-        endTime: extracted.endTime || "",
-        venue: extracted.venue || "",
-        organizerName: extracted.organizerName || user?.name || "",
-        category: extracted.category || "Technical",
-        summary: extracted.summary || "",
-        description: extracted.description || "",
-        tags: Array.isArray(extracted.tags) ? extracted.tags.join(", ") : extracted.tags || "",
-        registrationUrl: extracted.registrationUrl || "",
-        contactInfo: extracted.contactInfo || user?.email || "",
+        title: extracted.title === "Not specified" ? "" : (extracted.title || ""),
+        date: extracted.date === "Not specified" ? "" : (extracted.date || ""),
+        startTime: extracted.startTime === "Not specified" ? "" : (extracted.startTime || ""),
+        endTime: extracted.endTime === "Not specified" ? "" : (extracted.endTime || ""),
+        venue: extracted.venue === "Not specified" ? "" : (extracted.venue || ""),
+        organizerName: extracted.organizerName === "Not specified" ? (user?.name || "") : (extracted.organizerName || user?.name || ""),
+        category: extracted.category === "Not specified" ? "Technical" : (extracted.category || "Technical"),
+        summary: extracted.summary === "Not specified" ? "" : (extracted.summary || ""),
+        description: extracted.description === "Not specified" ? "" : (extracted.description || ""),
+        tags: Array.isArray(extracted.tags) ? extracted.tags.join(", ") : (extracted.tags || ""),
+        registrationUrl: extracted.registrationUrl === "Not specified" ? "" : (extracted.registrationUrl || ""),
+        contactInfo: extracted.contactInfo === "Not specified" ? (user?.email || "") : (extracted.contactInfo || user?.email || ""),
       });
 
       setConfidences(extracted.confidences || {});
@@ -243,6 +294,7 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
       setStep("REVIEW");
     } catch (err: any) {
       clearInterval(interval);
+      console.warn("AI analysis note:", err.message);
       setErrorMsg(err.message || "Could not analyze poster. Please enter details manually.");
       setStep("REVIEW");
     }
@@ -298,7 +350,11 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
         setPosterFile(null);
         onComplete();
       } else {
-        router.push("/dashboard/organizer");
+        if (user?.role?.toUpperCase() === "STUDENT") {
+          router.push("/dashboard/student");
+        } else {
+          router.push("/dashboard/organizer");
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to submit event. Try again.");
@@ -367,47 +423,171 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
             </p>
           </div>
 
-          {/* Sample Posters Grid */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-display font-bold uppercase tracking-wider text-kalvium-text dark:text-kalvium-dark-text">
-                  Or Test with Sample Campus Posters (1-Click AI Demo)
-                </h3>
-                <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted">
-                  Select any prepared campus poster to see real AI extraction, confidence scores, and clash scenarios.
-                </p>
+          {/* Product Guide: How to Use & Poster Upload Rules */}
+          <div className="pt-8 border-t border-kalvium-border/60 dark:border-kalvium-dark-border/60 space-y-8">
+            
+            {/* 1. How to Use Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-kalvium-coral/10 dark:bg-kalvium-coral/20 border border-kalvium-coral/20 text-kalvium-coral text-[11px] font-bold uppercase tracking-wider mb-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    <span>How to Use</span>
+                  </div>
+                  <h3 className="text-lg font-display font-bold text-kalvium-text dark:text-kalvium-dark-text tracking-tight">
+                    3 Simple Steps to Publish an Event
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
+                  <div className="w-9 h-9 rounded-xl bg-kalvium-coral/10 dark:bg-kalvium-coral/20 border border-kalvium-coral/20 text-kalvium-coral flex items-center justify-center font-bold text-sm mb-3.5">
+                    1
+                  </div>
+                  <h4 className="text-sm font-bold text-kalvium-text dark:text-kalvium-dark-text mb-1">
+                    Upload Event Poster
+                  </h4>
+                  <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted leading-relaxed">
+                    Drop your club or department poster in the upload box above. Multimodal AI scans and extracts all event details automatically.
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm mb-3.5">
+                    2
+                  </div>
+                  <h4 className="text-sm font-bold text-kalvium-text dark:text-kalvium-dark-text mb-1">
+                    Review & Edit Fields
+                  </h4>
+                  <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted leading-relaxed">
+                    Verify the auto-filled title, dates, timings, venue, and summary. You can freely edit or correct any field before proceeding.
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm mb-3.5">
+                    3
+                  </div>
+                  <h4 className="text-sm font-bold text-kalvium-text dark:text-kalvium-dark-text mb-1">
+                    Submit for Campus Verification
+                  </h4>
+                  <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted leading-relaxed">
+                    Submit your request to the Campus Manager. Once certified against the original poster, your event goes live on the campus calendar.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {SAMPLE_POSTERS.map((sample, idx) => (
-                <div
-                  key={sample.id}
-                  onClick={() => handleSelectSample(sample)}
-                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral/50 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-md active:scale-95"
-                >
-                  <div className="aspect-[4/3] w-full overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt">
-                    <img
-                      src={sample.previewUrl}
-                      alt={sample.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 will-change-transform"
-                    />
+            {/* 2. Poster Upload Rules & Requirements */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Requirements & Specs */}
+              <div className="p-6 rounded-3xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-kalvium-coral/10 dark:bg-kalvium-coral/20 text-kalvium-coral flex items-center justify-center">
+                    <FileCheck className="w-4 h-4" />
                   </div>
-                  <div className="p-3.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-kalvium-coral block mb-1">
-                      {sample.category}
-                    </span>
-                    <h4 className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text group-hover:text-kalvium-coral line-clamp-1 transition-colors">
-                      {sample.name}
+                  <div>
+                    <h4 className="text-sm font-bold text-kalvium-text dark:text-kalvium-dark-text">
+                      Poster Image Requirements
                     </h4>
-                    <span className="text-[11px] text-kalvium-muted group-hover:text-kalvium-coral block mt-1 transition-colors">
-                      Click to analyze with AI →
-                    </span>
+                    <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted">
+                      Ensure your poster meets these standards for accurate extraction
+                    </p>
                   </div>
                 </div>
-              ))}
+
+                <div className="space-y-3 mt-4 text-xs">
+                  <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt/60">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-kalvium-text dark:text-kalvium-dark-text">Supported File Formats: </span>
+                      <span className="text-kalvium-muted dark:text-kalvium-dark-muted">JPG, JPEG, PNG, or WebP files up to 10MB in size.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt/60">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-kalvium-text dark:text-kalvium-dark-text">High-Resolution Graphics: </span>
+                      <span className="text-kalvium-muted dark:text-kalvium-dark-muted">Direct digital exports (e.g. Canva, Figma, Illustrator) are recommended over photos of physical printouts.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt/60">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-kalvium-text dark:text-kalvium-dark-text">Legible Typography: </span>
+                      <span className="text-kalvium-muted dark:text-kalvium-dark-muted">Text must be sharp with clear contrast against poster backgrounds for accurate OCR.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* What to Include vs Avoid */}
+              <div className="p-6 rounded-3xl bg-white dark:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border shadow-soft-xs">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-kalvium-text dark:text-kalvium-dark-text">
+                      Must-Have Poster Content
+                    </h4>
+                    <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted">
+                      Mandatory event details required for Campus Manager approval
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                  <div className="p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30">
+                    <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-1">
+                      ✓ What to Include
+                    </span>
+                    <ul className="space-y-1.5 text-kalvium-muted dark:text-kalvium-dark-muted text-[11px]">
+                      <li>• Official event title & club name</li>
+                      <li>• Exact date (DD/MM/YYYY)</li>
+                      <li>• Start & end times</li>
+                      <li>• Specific campus venue / room</li>
+                      <li>• Registration URL or QR code</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/50 dark:border-rose-800/30">
+                    <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider block mb-1">
+                      ✗ What to Avoid
+                    </span>
+                    <ul className="space-y-1.5 text-kalvium-muted dark:text-kalvium-dark-muted text-[11px]">
+                      <li>• Blurry photos of paper prints</li>
+                      <li>• Undefined "TBD" venues</li>
+                      <li>• Missing timings or dates</li>
+                      <li>• Unofficial commercial ads</li>
+                      <li>• Duplicate submissions</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* 3. Campus Verification Policy Banner */}
+            <div className="p-4 rounded-2xl bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-kalvium-coral/10 dark:bg-kalvium-coral/20 text-kalvium-coral flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-kalvium-text dark:text-kalvium-dark-text">
+                    Campus Manager Verification Policy
+                  </h5>
+                  <p className="text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted">
+                    Every submission is verified against the original poster and active campus room bookings to prevent timetable clashes and spam.
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -490,7 +670,6 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
                   setStep("UPLOAD");
                   setPosterPreview(null);
                   setPosterFile(null);
-                  setSelectedSampleId(null);
                   setFormData({
                     title: "", date: "", startTime: "", endTime: "", venue: "",
                     organizerName: user?.name || "", category: "Workshop",
@@ -777,18 +956,20 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
                 {submitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    Submitting for Verification...
+                    {user?.role?.toUpperCase() === "STUDENT" ? "Submitting Event Request..." : "Submitting for Verification..."}
                   </>
                 ) : (
                   <>
                     <FileCheck className="w-4 h-4" />
-                    Submit for Campus Manager Verification
+                    {user?.role?.toUpperCase() === "STUDENT" ? "Submit Event Request for Campus Verification" : "Submit for Campus Manager Verification"}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
               <p className="text-center text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-2">
-                Your event will remain private until a Campus Manager reviews and approves it.
+                {user?.role?.toUpperCase() === "STUDENT"
+                  ? "Your event proposal will be reviewed by the Campus Manager before publishing to students."
+                  : "Your event will remain private until a Campus Manager reviews and approves it."}
               </p>
             </div>
           </form>

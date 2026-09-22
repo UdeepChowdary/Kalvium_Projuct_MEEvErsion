@@ -3,7 +3,7 @@ import { Caveat, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import DemoSwitcherBar from "@/components/DemoSwitcherBar";
+
 import Navbar from "@/components/Navbar";
 import SmoothScroll from "@/components/SmoothScroll";
 import CampusHubLogo from "@/components/CampusHubLogo";
@@ -45,7 +45,7 @@ export default function RootLayout({
           <ThemeProvider>
             <SmoothScroll>
               <div className="sticky top-0 z-40 w-full">
-                <DemoSwitcherBar />
+
                 <Navbar />
               </div>
               <main className="flex-1">{children}</main>

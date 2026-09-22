@@ -66,17 +66,9 @@ SMART SCHEDULE & REMINDERS
 
 ---
 
-## ⚡ 1-Click Demo Evaluation Mode
+## ⚡ Real Authentication
 
-A persistent **DEMO EVALUATION BAR** is pinned to the header for instant presentation. Clicking any account seamlessly performs authentic JWT authentication with the database:
-
-| Role | Name | Demo Email | Password |
-|---|---|---|---|
-| **Student** | Alex Johnson | `alex@campus.edu` | `demo12345` |
-| **Organizer** | Robotics & AI Society | `robotics@campus.edu` | `demo12345` |
-| **Campus Manager** | Dr. Alistair Sharma | `manager@campus.edu` | `demo12345` |
-
-*(To hide the demo bar in production mode, set `NEXT_PUBLIC_DEMO_MODE="false"` in `.env`)*.
+The platform now uses **Firebase Authentication** with secure server-side session cookies. All users must sign up and log in securely. Roles (`STUDENT`, `ORGANIZER`, `CAMPUS_MANAGER`) are managed via Firebase Custom Claims and enforced both on the client middleware and strictly via server-side API routes and Firestore Security Rules.
 
 ---
 
@@ -84,7 +76,8 @@ A persistent **DEMO EVALUATION BAR** is pinned to the header for instant present
 
 - **Framework**: Next.js 14.2 (App Router, Server Components & Route Handlers)
 - **Language**: TypeScript 5.6
-- **Database**: SQLite via Prisma ORM (`prisma/schema.prisma`)
+- **Database**: Firebase Firestore (NoSQL) & Firebase Storage for media assets
+- **Authentication**: Firebase Auth (Custom Claims & Session Cookies)
 - **Styling**: Tailwind CSS (Authentic Kalvium visual language: warm cream `#FAF6F0` background, crisp paper-white cards, signature Kalvium coral `#E8492D` accents, verified forest green `#2F855A`, warm amber `#B7791F` clash warnings, hairline borders `#E7E2D8`, Space Grotesk display & Inter body typography).
 - **AI Poster Analyzer**: Google Gemini 1.5/2.0 Flash Vision integration (`GEMINI_API_KEY`) paired with a calibrated local fallback OCR/heuristics engine for 100% offline reliability.
 - **Clash Engine**: Exact interval collision math: `eventA.start < eventB.end && eventB.start < eventA.end`.
@@ -99,11 +92,8 @@ A persistent **DEMO EVALUATION BAR** is pinned to the header for instant present
 npm install
 ```
 
-### 2. Initialize Database & Run Seed
-```bash
-npx prisma db push
-node scripts/seed.mjs
-```
+### 2. Configure Environment Variables
+Create a `.env` file based on `.env.example` and add your Firebase Client and Firebase Admin service account credentials.
 
 ### 3. Start Development Server
 ```bash
@@ -136,6 +126,7 @@ node scripts/verify-clash.mjs
 
 ## 🔒 Security & Data Integrity
 
-- **Server-Side Authorization**: API routes check JWT roles. Students cannot access pending events or manager endpoints; Organizers cannot set status to `APPROVED`.
+- **Server-Side Authorization**: API routes check Firebase Session Cookies and verify custom claims. Students cannot access pending events or manager endpoints; Organizers cannot set status to `APPROVED`.
+- **Database Security**: `firestore.rules` and `storage.rules` ensure operations are validated against user identity and permissions at the database level.
 - **Anti-Hallucination Enforced**: AI returns *"Not specified"* or *"Needs verification"* when fields are missing from posters.
 - **Zero Double-Bookings**: Students receive prominent modal alerts detailing conflicting events and overlap windows, with non-blocking *"Save Anyway"* override.

@@ -171,7 +171,11 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
         setPosterFile(null);
         onComplete();
       } else {
-        router.push("/dashboard/organizer");
+        if (user?.role?.toUpperCase() === "STUDENT") {
+          router.push("/dashboard/student");
+        } else {
+          router.push("/dashboard/organizer");
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to submit event. Try again.");
@@ -435,13 +439,15 @@ export default function ManualEventForm({ onComplete }: ManualEventFormProps) {
             <button type="submit" disabled={submitting}
               className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-kalvium-coral text-white font-bold text-sm rounded-2xl hover:bg-kalvium-coral/90 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed shadow-soft-sm">
               {submitting ? (
-                <><RefreshCw className="w-4 h-4 animate-spin" /> Submitting...</>
+                <><RefreshCw className="w-4 h-4 animate-spin" /> {user?.role?.toUpperCase() === "STUDENT" ? "Submitting Event Request..." : "Submitting..."}</>
               ) : (
-                <><FileCheck className="w-4 h-4" /> Submit for Campus Manager Verification <ArrowRight className="w-4 h-4" /></>
+                <><FileCheck className="w-4 h-4" /> {user?.role?.toUpperCase() === "STUDENT" ? "Submit Event Request for Campus Verification" : "Submit for Campus Manager Verification"} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
             <p className="text-center text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted mt-2">
-              Your event stays private until a Campus Manager reviews and approves it.
+              {user?.role?.toUpperCase() === "STUDENT"
+                ? "Your event proposal stays private until a Campus Manager reviews and approves it."
+                : "Your event stays private until a Campus Manager reviews and approves it."}
             </p>
           </div>
         </div>

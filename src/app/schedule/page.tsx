@@ -15,12 +15,20 @@ import {
   Sparkles,
 } from "lucide-react";
 import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
-import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useAuth, getDashboardRoute } from "@/context/AuthContext";
 
 export default function MySchedulePage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && user && user.role?.toUpperCase() !== "STUDENT") {
+      router.replace(getDashboardRoute(user.role));
+    }
+  }, [user, authLoading, router]);
 
   const fetchSchedule = async () => {
     if (!user) {
@@ -67,7 +75,7 @@ export default function MySchedulePage() {
           <Clock className="w-10 h-10 text-kalvium-coral mx-auto mb-3" />
           <h2 className="font-sans text-xl font-bold text-kalvium-text dark:text-kalvium-dark-text mb-2">My Schedule</h2>
           <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted mb-6">
-            Please sign in or select a demo role in the top evaluation bar to access your personal schedule and clash detector.
+            Please sign in to access your personal schedule and clash detector.
           </p>
           <Link
             href="/login"
@@ -81,7 +89,7 @@ export default function MySchedulePage() {
   }
 
   const conflictsCount = data?.conflictsCount || 0;
-  const groups = data?.groups || { startingSoon: [], today: [], tomorrow: [], upcoming: [] };
+  const groups = data?.groups || { startingSoon: [], today: [], tomorrow: [], upcoming: [], past: [] };
   const totalSaved = data?.count || 0;
 
   return (
@@ -301,6 +309,11 @@ function ScheduleItemCard({
             <span className="rounded-full bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt px-2.5 py-0.5 text-[10px] font-medium text-kalvium-muted dark:text-kalvium-dark-muted border border-kalvium-border dark:border-kalvium-dark-border uppercase tracking-wider">
               {event.category}
             </span>
+            {(event.isPast || event.dateCategory === "PAST") && (
+              <span className="rounded-full bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt px-2 py-0.5 text-[10px] font-semibold text-kalvium-muted border border-kalvium-border dark:border-kalvium-dark-border uppercase tracking-wider">
+                Past Event
+              </span>
+            )}
             <CampusVerifiedBadge size="sm" />
           </div>
 
