@@ -13,9 +13,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const expiresIn = 60 * 60 * 24 * 7 * 1000; // 7 days
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
     const decoded = await adminAuth.verifyIdToken(idToken);
+    const email = decoded.email || "";
+    const cleanEmail = email.toLowerCase().trim();
+    const isAllowedDomain = cleanEmail.endsWith("@kalvium.community") || cleanEmail.endsWith("@kalvium.com");
     
     // Check if user exists in Firestore
     const userRef = adminDb.collection("users").doc(decoded.uid);
@@ -23,15 +24,22 @@ export async function POST(req: NextRequest) {
     let user = userDoc.data();
 
     if (!userDoc.exists) {
-      const email = decoded.email || "";
+      // Enforce domain check on self-registration via session
+      if (!isAllowedDomain) {
+        return NextResponse.json(
+          { error: "Access restricted to @kalvium.community and @kalvium.com email addresses." },
+          { status: 403 }
+        );
+      }
+
       const name = decoded.name || (email ? email.split("@")[0] : "Campus Member");
       const role = (decoded.role as "STUDENT" | "ORGANIZER" | "CAMPUS_MANAGER") || "STUDENT";
 
       const fallbackUser = {
         name,
-        email,
+        email: cleanEmail,
         role,
-        avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(email || decoded.uid)}`,
+        avatar: `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(cleanEmail || decoded.uid)}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -41,7 +49,15 @@ export async function POST(req: NextRequest) {
         await adminAuth.setCustomUserClaims(decoded.uid, { role });
       }
       user = fallbackUser;
+    } else {
+      // Sync claims if missing from Auth
+      if (!decoded.role && user?.role) {
+        await adminAuth.setCustomUserClaims(decoded.uid, { role: user.role });
+      }
     }
+
+    const expiresIn = 60 * 60 * 24 * 7 * 1000; // 7 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
     const response = NextResponse.json({
       success: true,
@@ -54,7 +70,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    setAuthCookie(response, sessionCookie, user?.role);
+    await setAuthCookie(response, sessionCookie, user?.role);
 
     return response;
   } catch (error) {
