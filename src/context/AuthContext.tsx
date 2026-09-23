@@ -129,10 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety fallback: ensure initial auth loading state never hangs
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 3500);
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      clearTimeout(safetyTimeout);
       fetchCurrentUser(firebaseUser);
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; role?: string; error?: string }> => {
