@@ -86,6 +86,14 @@ export default function LandingPage() {
   const [simulatedClash, setSimulatedClash] = React.useState(false);
   const [organizerMode, setOrganizerMode] = React.useState<"vision" | "manual">("vision");
 
+  const currentSemester = React.useMemo(() => {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const term = month >= 0 && month <= 4 ? "Spring" : month <= 6 ? "Summer" : "Autumn";
+    return `${term} ${year} semester`;
+  }, []);
+
   if (loading || user) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -119,7 +127,7 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-kalvium-success opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-kalvium-success"></span>
               </span>
-              <span className="font-semibold text-kalvium-success">Autumn 2026 semester</span>
+              <span className="font-semibold text-kalvium-success">{currentSemester}</span>
               <span className="text-kalvium-muted">•</span>
               <span className="text-kalvium-muted">verified by AI and campus staff</span>
             </motion.p>

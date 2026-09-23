@@ -213,17 +213,18 @@ function StudentDashboardContent() {
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div className="flex items-center gap-2 border-b border-kalvium-border dark:border-kalvium-dark-border pb-4 mb-8 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-kalvium-border dark:border-kalvium-dark-border pb-4 mb-8 overflow-x-auto no-scrollbar scroll-smooth">
         <button
           onClick={() => handleTabChange("AGENDA")}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 sm:gap-2 shrink-0 ${
             activeTab === "AGENDA"
               ? "bg-kalvium-coral text-white shadow-sm"
               : "bg-white dark:bg-kalvium-dark-surface text-kalvium-muted dark:text-kalvium-dark-muted hover:text-kalvium-text dark:hover:text-kalvium-dark-text border border-kalvium-border dark:border-kalvium-dark-border"
           }`}
         >
-          <Calendar className="w-3.5 h-3.5" />
-          <span>My Agenda & Saved</span>
+          <Calendar className="w-3.5 h-3.5 shrink-0" />
+          <span>Agenda</span>
+          <span className="hidden sm:inline">& Saved</span>
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-sans font-bold ${
               activeTab === "AGENDA" ? "bg-white/20 text-white" : "bg-kalvium-surface-alt text-kalvium-muted"
@@ -235,14 +236,14 @@ function StudentDashboardContent() {
 
         <button
           onClick={() => handleTabChange("REQUESTS")}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 sm:gap-2 shrink-0 ${
             activeTab === "REQUESTS"
               ? "bg-kalvium-coral text-white shadow-sm"
               : "bg-white dark:bg-kalvium-dark-surface text-kalvium-muted dark:text-kalvium-dark-muted hover:text-kalvium-text dark:hover:text-kalvium-dark-text border border-kalvium-border dark:border-kalvium-dark-border"
           }`}
         >
-          <Clock className="w-3.5 h-3.5" />
-          <span>My Event Requests</span>
+          <Clock className="w-3.5 h-3.5 shrink-0" />
+          <span>My Requests</span>
           {requestedEvents.length > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-sans font-bold ${
@@ -260,26 +261,28 @@ function StudentDashboardContent() {
 
         <button
           onClick={() => handleTabChange("CREATE_AI")}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 sm:gap-2 shrink-0 ${
             activeTab === "CREATE_AI"
               ? "bg-kalvium-coral text-white shadow-sm"
               : "bg-white dark:bg-kalvium-dark-surface text-kalvium-muted dark:text-kalvium-dark-muted hover:text-kalvium-text dark:hover:text-kalvium-dark-text border border-kalvium-border dark:border-kalvium-dark-border"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Request with AI Poster</span>
+          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+          <span>AI Request</span>
+          <span className="hidden sm:inline">Poster</span>
         </button>
 
         <button
           onClick={() => handleTabChange("CREATE_MANUAL")}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 sm:gap-2 shrink-0 ${
             activeTab === "CREATE_MANUAL"
               ? "bg-kalvium-coral text-white shadow-sm"
               : "bg-white dark:bg-kalvium-dark-surface text-kalvium-muted dark:text-kalvium-dark-muted hover:text-kalvium-text dark:hover:text-kalvium-dark-text border border-kalvium-border dark:border-kalvium-dark-border"
           }`}
         >
-          <PenTool className="w-3.5 h-3.5" />
-          <span>Manual Event Request</span>
+          <PenTool className="w-3.5 h-3.5 shrink-0" />
+          <span>Manual</span>
+          <span className="hidden sm:inline">Request</span>
         </button>
       </div>
 
