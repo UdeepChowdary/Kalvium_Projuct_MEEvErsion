@@ -15,10 +15,32 @@ export async function GET() {
   const keyHasRealNewlines = rawKey.includes("\n");
   const keyHasEscapedNewlines = rawKey.includes("\\n");
 
-  return NextResponse.json({
-    status: "ok",
+  let adminStatus = "untested";
+  let adminError: string | null = null;
+  let adminStack: string | null = null;
+  let usersCount = -1;
+
+  try {
+    const { adminDb } = await import("@/lib/firebase/admin");
+    const snap = await adminDb.collection("users").limit(1).get();
+    adminStatus = "connected";
+    usersCount = snap.size;
+  } catch (e: any) {
+    adminStatus = "error";
+    adminError = e?.message || String(e);
+    adminStack = e?.stack || null;
+  }
+
+  const response = NextResponse.json({
+    status: adminStatus === "error" ? "degraded" : "ok",
     deployedAt: new Date().toISOString(),
     campusDate: formatLocalDate(new Date()),
+    admin: {
+      status: adminStatus,
+      usersFound: usersCount,
+      error: adminError,
+      stack: adminStack,
+    },
     environment: {
       hasProjectId,
       projectId: projectId || "MISSING",
@@ -31,4 +53,7 @@ export async function GET() {
       keyHasEscapedNewlines,
     },
   });
+
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  return response;
 }
