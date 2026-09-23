@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth, getDashboardRoute } from "@/context/AuthContext";
@@ -37,6 +37,21 @@ function NavbarContent() {
 
   const isManagerPortalActive = pathname === "/dashboard/manager";
   const isManagerAddActive = pathname === "/dashboard/organizer" && isCreateTab;
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname, searchParams]);
+
+  // Close mobile drawer on Escape key press
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
 
 
   return (
@@ -190,11 +205,17 @@ function NavbarContent() {
                   </span>
                 </div>
 
-                <div className="w-7 h-7 rounded-full bg-kalvium-border dark:bg-kalvium-dark-border flex items-center justify-center font-bold text-xs text-kalvium-text dark:text-kalvium-dark-text overflow-hidden select-none">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    user.name.charAt(0)
+                <div className="w-7 h-7 rounded-full bg-kalvium-border dark:bg-kalvium-dark-border flex items-center justify-center font-bold text-xs text-kalvium-text dark:text-kalvium-dark-text overflow-hidden select-none relative">
+                  <span className="text-[11px] font-bold">{user.name?.charAt(0) || "U"}</span>
+                  {user.avatar && (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = "none";
+                      }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                   )}
                 </div>
 
@@ -238,9 +259,14 @@ function NavbarContent() {
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer Backdrop & Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-kalvium-border dark:border-kalvium-dark-border bg-kalvium-surface dark:bg-kalvium-dark-surface px-4 pt-3 pb-5 space-y-2">
+          <>
+            <div
+              className="fixed inset-0 top-16 bg-black/25 dark:bg-black/50 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="relative z-50 md:hidden border-t border-kalvium-border dark:border-kalvium-dark-border bg-kalvium-surface dark:bg-kalvium-dark-surface px-4 pt-3 pb-5 space-y-2">
             {user?.role?.toUpperCase() === "STUDENT" && (
               <>
                 <Link
@@ -396,8 +422,9 @@ function NavbarContent() {
               </div>
             )}
           </div>
-        )}
-      </header>
+        </>
+      )}
+    </header>
 
       {/* Sticky Mobile Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-kalvium-surface/95 dark:bg-kalvium-dark-surface/95 backdrop-blur-md border-t border-kalvium-border dark:border-kalvium-dark-border flex items-center justify-around py-2 px-3 shadow-lg">

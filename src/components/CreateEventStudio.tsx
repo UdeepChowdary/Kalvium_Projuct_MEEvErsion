@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { auth as firebaseClientAuth } from "@/lib/firebase/client";
 import { ConfidenceLevel } from "@/lib/ai-poster-constants";
 
@@ -71,6 +72,7 @@ interface CreateEventStudioProps {
 export default function CreateEventStudio({ onComplete }: CreateEventStudioProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const { error: toastError, warning: toastWarning } = useToast();
 
   const [step, setStep] = useState<"UPLOAD" | "ANALYZING" | "REVIEW">("UPLOAD");
   const [analyzingStepIndex, setAnalyzingStepIndex] = useState(0);
@@ -149,7 +151,7 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
   const handleSaveApiKey = (keyToSave?: string): boolean => {
     const key = (keyToSave !== undefined ? keyToSave : apiKeyInput).trim();
     if (!key) {
-      alert("Please enter a valid Gemini API key.");
+      toastWarning("Please enter a valid Gemini API key.");
       return false;
     }
     try {
@@ -185,7 +187,7 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
   const handleModalSaveAndAnalyze = () => {
     const key = modalKeyInput.trim();
     if (!key) {
-      alert("Please enter a valid Gemini API key to proceed with AI analysis.");
+      toastWarning("Please enter a valid Gemini API key to proceed with AI analysis.");
       return;
     }
     const saved = handleSaveApiKey(key);
@@ -304,7 +306,7 @@ export default function CreateEventStudio({ onComplete }: CreateEventStudioProps
   // Handle Drag & Drop / File Input
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please upload a valid image file (JPG, PNG, WebP).");
+      toastError("Please upload a valid image file (JPG, PNG, WebP).");
       return;
     }
 

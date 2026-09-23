@@ -170,6 +170,18 @@ export default function LandingPage() {
               </MagneticButton>
             </motion.div>
 
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.85 }}
+              className="mt-3 text-xs text-kalvium-muted dark:text-kalvium-dark-muted font-normal"
+            >
+              Already a campus member?{" "}
+              <Link href="/login" className="font-semibold text-kalvium-coral hover:underline inline-flex items-center gap-0.5">
+                Sign in to your portal →
+              </Link>
+            </motion.p>
+
             {/* Mobile Hero Illustration (Simplified, non-layered for clean mobile layout) */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
