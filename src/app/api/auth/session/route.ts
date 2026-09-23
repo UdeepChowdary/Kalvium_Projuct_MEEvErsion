@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { setAuthCookie } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const { idToken } = await req.json();
@@ -73,10 +75,10 @@ export async function POST(req: NextRequest) {
     await setAuthCookie(response, sessionCookie, user?.role);
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Session creation error:", error);
     return NextResponse.json(
-      { error: "Internal server error during login." },
+      { error: error?.message || "Internal server error during login." },
       { status: 500 }
     );
   }
