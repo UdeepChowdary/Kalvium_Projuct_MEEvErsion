@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   PlusCircle,
   Clock,
@@ -19,11 +20,35 @@ import ManualEventForm from "@/components/ManualEventForm";
 import { useAuth } from "@/context/AuthContext";
 import { getTimeGreeting } from "@/lib/time";
 
-export default function OrganizerDashboardPage() {
+function OrganizerDashboardContent() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"SUBMISSIONS" | "CREATE_AI" | "CREATE_MANUAL">("SUBMISSIONS");
+
+  const handleTabChange = (newTab: "SUBMISSIONS" | "CREATE_AI" | "CREATE_MANUAL") => {
+    setActiveTab(newTab);
+    if (newTab === "SUBMISSIONS") {
+      router.replace("/dashboard/organizer", { scroll: false });
+    } else if (newTab === "CREATE_AI") {
+      router.replace("/dashboard/organizer?tab=create", { scroll: false });
+    } else if (newTab === "CREATE_MANUAL") {
+      router.replace("/dashboard/organizer?tab=create_manual", { scroll: false });
+    }
+  };
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab")?.toLowerCase();
+    if (tabParam === "create" || tabParam === "create_ai") {
+      setActiveTab("CREATE_AI");
+    } else if (tabParam === "create_manual") {
+      setActiveTab("CREATE_MANUAL");
+    } else {
+      setActiveTab("SUBMISSIONS");
+    }
+  }, [searchParams]);
 
   const fetchOrganizerData = async () => {
     if (!user) return;
@@ -132,7 +157,7 @@ export default function OrganizerDashboardPage() {
           )}
           {activeTab !== "SUBMISSIONS" && (
             <button
-              onClick={() => setActiveTab("SUBMISSIONS")}
+              onClick={() => handleTabChange("SUBMISSIONS")}
               className="px-4 py-2.5 rounded-full border border-kalvium-border dark:border-kalvium-dark-border bg-white dark:bg-kalvium-dark-surface text-kalvium-text dark:text-kalvium-dark-text hover:border-kalvium-coral text-xs font-bold shadow-sm transition shrink-0 active:scale-95"
             >
               ← Back to Submissions
@@ -144,7 +169,7 @@ export default function OrganizerDashboardPage() {
       {/* Workspace Tabs */}
       <div className="flex items-center gap-2 border-b border-kalvium-border dark:border-kalvium-dark-border pb-4 mb-8 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("SUBMISSIONS")}
+          onClick={() => handleTabChange("SUBMISSIONS")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "SUBMISSIONS"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -160,7 +185,7 @@ export default function OrganizerDashboardPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab("CREATE_AI")}
+          onClick={() => handleTabChange("CREATE_AI")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "CREATE_AI"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -172,7 +197,7 @@ export default function OrganizerDashboardPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab("CREATE_MANUAL")}
+          onClick={() => handleTabChange("CREATE_MANUAL")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "CREATE_MANUAL"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -189,7 +214,7 @@ export default function OrganizerDashboardPage() {
         <div className="animate-fade-in">
           <CreateEventStudio
             onComplete={() => {
-              setActiveTab("SUBMISSIONS");
+              handleTabChange("SUBMISSIONS");
               fetchOrganizerData();
             }}
           />
@@ -198,7 +223,7 @@ export default function OrganizerDashboardPage() {
         <div className="animate-fade-in">
           <ManualEventForm
             onComplete={() => {
-              setActiveTab("SUBMISSIONS");
+              handleTabChange("SUBMISSIONS");
               fetchOrganizerData();
             }}
           />
@@ -268,14 +293,14 @@ export default function OrganizerDashboardPage() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
-                  onClick={() => setActiveTab("CREATE_AI")}
+                  onClick={() => handleTabChange("CREATE_AI")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-kalvium-coral text-white text-xs font-bold shadow-sm active:scale-95 transition hover:bg-kalvium-coral/90"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>AI Poster Analysis</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab("CREATE_MANUAL")}
+                  onClick={() => handleTabChange("CREATE_MANUAL")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-kalvium-card dark:bg-kalvium-dark-card border border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral text-kalvium-text dark:text-kalvium-dark-text text-xs font-bold shadow-sm active:scale-95 transition"
                 >
                   <PenTool className="w-4 h-4" />
@@ -389,4 +414,18 @@ function renderStatusBadge(status: string) {
         </span>
       );
   }
+}
+
+export default function OrganizerDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-kalvium-coral border-t-transparent animate-spin" />
+        </div>
+      }
+    >
+      <OrganizerDashboardContent />
+    </Suspense>
+  );
 }

@@ -45,6 +45,20 @@ function StudentDashboardContent() {
   const [requestsData, setRequestsData] = useState<any>(null);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
+  // Handle tab change: updates both state and URL query param
+  const handleTabChange = (newTab: TabType) => {
+    setActiveTab(newTab);
+    if (newTab === "AGENDA") {
+      router.replace("/dashboard/student", { scroll: false });
+    } else if (newTab === "REQUESTS") {
+      router.replace("/dashboard/student?tab=requests", { scroll: false });
+    } else if (newTab === "CREATE_AI") {
+      router.replace("/dashboard/student?tab=create", { scroll: false });
+    } else if (newTab === "CREATE_MANUAL") {
+      router.replace("/dashboard/student?tab=create_manual", { scroll: false });
+    }
+  };
+
   // Sync tab with URL query parameter if present
   useEffect(() => {
     const tabParam = searchParams.get("tab")?.toLowerCase();
@@ -54,7 +68,7 @@ function StudentDashboardContent() {
       setActiveTab("CREATE_MANUAL");
     } else if (tabParam === "requests") {
       setActiveTab("REQUESTS");
-    } else if (tabParam === "agenda") {
+    } else {
       setActiveTab("AGENDA");
     }
   }, [searchParams]);
@@ -177,7 +191,7 @@ function StudentDashboardContent() {
         {/* Quick Action Button to Request Event */}
         {activeTab === "AGENDA" && (
           <button
-            onClick={() => setActiveTab("CREATE_AI")}
+            onClick={() => handleTabChange("CREATE_AI")}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-kalvium-coral hover:bg-kalvium-coral-hover text-white text-xs font-bold shadow-sm transition-all duration-200 active:scale-95 shrink-0 self-start sm:self-auto"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -189,7 +203,7 @@ function StudentDashboardContent() {
       {/* Navigation Tabs Bar */}
       <div className="flex items-center gap-2 border-b border-kalvium-border dark:border-kalvium-dark-border pb-4 mb-8 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("AGENDA")}
+          onClick={() => handleTabChange("AGENDA")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "AGENDA"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -208,7 +222,7 @@ function StudentDashboardContent() {
         </button>
 
         <button
-          onClick={() => setActiveTab("REQUESTS")}
+          onClick={() => handleTabChange("REQUESTS")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "REQUESTS"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -233,7 +247,7 @@ function StudentDashboardContent() {
         </button>
 
         <button
-          onClick={() => setActiveTab("CREATE_AI")}
+          onClick={() => handleTabChange("CREATE_AI")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "CREATE_AI"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -245,7 +259,7 @@ function StudentDashboardContent() {
         </button>
 
         <button
-          onClick={() => setActiveTab("CREATE_MANUAL")}
+          onClick={() => handleTabChange("CREATE_MANUAL")}
           className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-2 shrink-0 ${
             activeTab === "CREATE_MANUAL"
               ? "bg-kalvium-coral text-white shadow-sm"
@@ -511,7 +525,7 @@ function StudentDashboardContent() {
                   Have an idea for a study group, workshop, hack session, or cultural gathering? Propose your event with AI poster analysis.
                 </p>
                 <button
-                  onClick={() => setActiveTab("CREATE_AI")}
+                  onClick={() => handleTabChange("CREATE_AI")}
                   className="w-full py-2 px-4 rounded-full bg-kalvium-coral hover:bg-kalvium-coral-hover text-white text-xs font-bold shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
                 >
                   <span>Start Event Request →</span>
@@ -641,14 +655,14 @@ function StudentDashboardContent() {
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
-                  onClick={() => setActiveTab("CREATE_AI")}
+                  onClick={() => handleTabChange("CREATE_AI")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-kalvium-coral text-white text-xs font-bold shadow-sm active:scale-95 transition hover:bg-kalvium-coral/90"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Request with AI Poster</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab("CREATE_MANUAL")}
+                  onClick={() => handleTabChange("CREATE_MANUAL")}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral text-kalvium-text dark:text-kalvium-dark-text text-xs font-bold shadow-sm active:scale-95 transition"
                 >
                   <PenTool className="w-4 h-4" />
@@ -752,7 +766,7 @@ function StudentDashboardContent() {
 
           <CreateEventStudio
             onComplete={() => {
-              setActiveTab("REQUESTS");
+              handleTabChange("REQUESTS");
               fetchRequests();
             }}
           />
@@ -777,7 +791,7 @@ function StudentDashboardContent() {
 
           <ManualEventForm
             onComplete={() => {
-              setActiveTab("REQUESTS");
+              handleTabChange("REQUESTS");
               fetchRequests();
             }}
           />

@@ -154,10 +154,10 @@ export default function LandingPage() {
               transition={{ duration: 0.7, delay: 0.75 }}
               className="mt-8 flex flex-wrap items-center gap-4"
             >
-              <MagneticButton href="/register" icon={<ArrowRight size={16} />}>
+              <MagneticButton href="/register?redirect=%2Fdashboard%2Fstudent&role=STUDENT" icon={<ArrowRight size={16} />}>
                 Explore events
               </MagneticButton>
-              <MagneticButton href="/register" variant="outline">
+              <MagneticButton href="/register?redirect=%2Fdashboard%2Forganizer&role=ORGANIZER" variant="outline">
                 Post an event
               </MagneticButton>
             </motion.div>
@@ -425,7 +425,7 @@ export default function LandingPage() {
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
                 <span className="ml-3 font-mono text-[11px] text-kalvium-muted dark:text-kalvium-dark-muted hidden sm:inline">
-                  kalvium.app/{activeRoleTab === "student" ? "events" : activeRoleTab === "organizer" ? "events/create" : "manager"}
+                  kalvium.app/{activeRoleTab === "student" ? "dashboard/student" : activeRoleTab === "organizer" ? "dashboard/organizer" : "dashboard/manager"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -476,10 +476,10 @@ export default function LandingPage() {
                       </div>
                       <div className="pt-4">
                         <Link
-                          href="/events"
+                          href="/register?redirect=%2Fdashboard%2Fstudent&role=STUDENT"
                           className="inline-flex items-center gap-2 text-xs font-bold text-kalvium-coral hover:underline"
                         >
-                          <span>Go to Student Event Feed</span>
+                          <span>Go to Student Portal</span>
                           <ArrowRight size={14} />
                         </Link>
                       </div>
@@ -600,10 +600,10 @@ export default function LandingPage() {
                       </div>
                       <div className="pt-4">
                         <Link
-                          href="/events/create"
+                          href="/register?redirect=%2Fdashboard%2Forganizer&role=ORGANIZER"
                           className="inline-flex items-center gap-2 text-xs font-bold text-kalvium-coral hover:underline"
                         >
-                          <span>Open Event Creation Studio</span>
+                          <span>Go to Organizer Portal</span>
                           <ArrowRight size={14} />
                         </Link>
                       </div>
@@ -743,10 +743,10 @@ export default function LandingPage() {
                       </div>
                       <div className="pt-4">
                         <Link
-                          href="/manager"
+                          href="/register?redirect=%2Fdashboard%2Fmanager&role=CAMPUS_MANAGER"
                           className="inline-flex items-center gap-2 text-xs font-bold text-kalvium-coral hover:underline"
                         >
-                          <span>Open Verification Studio</span>
+                          <span>Go to Manager Portal</span>
                           <ArrowRight size={14} />
                         </Link>
                       </div>
@@ -912,7 +912,7 @@ export default function LandingPage() {
               AI makes event creation faster. A human check makes it trustworthy. Never miss what matters on campus.
             </p>
           </div>
-          <MagneticButton href="/register">
+          <MagneticButton href="/register?redirect=%2Fdashboard%2Fstudent&role=STUDENT">
             Start Exploring
           </MagneticButton>
         </div>

@@ -14,6 +14,14 @@ export function middleware(req: NextRequest) {
 
   // If user is authenticated and attempts to access the landing page "/" or "/login" or "/register"
   if (token && (pathname === "/" || pathname === "/login" || pathname === "/register")) {
+    const redirectParam = req.nextUrl.searchParams.get("redirect");
+    if (redirectParam && redirectParam.startsWith("/")) {
+      const isManagerRestricted = redirectParam.includes("/manager") && role !== "CAMPUS_MANAGER";
+      const isOrganizerRestricted = redirectParam.includes("/organizer") && role !== "ORGANIZER" && role !== "CAMPUS_MANAGER";
+      if (!isManagerRestricted && !isOrganizerRestricted) {
+        return NextResponse.redirect(new URL(redirectParam, req.url));
+      }
+    }
     const target = getTargetDashboard(role);
     return NextResponse.redirect(new URL(target, req.url));
   }
