@@ -36,7 +36,8 @@ function NavbarContent() {
   const isOrganizerCreateActive = (pathname === "/dashboard/organizer" && isCreateTab) || pathname === "/events/create";
 
   const isManagerPortalActive = pathname === "/dashboard/manager";
-  const isManagerAddActive = pathname === "/dashboard/organizer";
+  const isManagerAddActive = pathname === "/dashboard/organizer" && isCreateTab;
+
 
   return (
     <>
@@ -122,7 +123,7 @@ function NavbarContent() {
                   <span>Manager's Portal</span>
                 </Link>
                 <Link
-                  href="/dashboard/organizer"
+                  href="/dashboard/organizer?tab=create"
                   className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs transition-all duration-150 active:scale-95 select-none ${
                     isManagerAddActive
                       ? "bg-white dark:bg-kalvium-dark-surface text-kalvium-coral font-semibold shadow-xs"
@@ -307,7 +308,7 @@ function NavbarContent() {
                   Manager's Portal
                 </Link>
                 <Link
-                  href="/dashboard/organizer"
+                  href="/dashboard/organizer?tab=create"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
                     isManagerAddActive

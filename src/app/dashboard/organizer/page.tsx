@@ -18,7 +18,9 @@ import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
 import CreateEventStudio from "@/components/CreateEventStudio";
 import ManualEventForm from "@/components/ManualEventForm";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { getTimeGreeting } from "@/lib/time";
+
 
 function OrganizerDashboardContent() {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +29,9 @@ function OrganizerDashboardContent() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"SUBMISSIONS" | "CREATE_AI" | "CREATE_MANUAL">("SUBMISSIONS");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const { success, error } = useToast();
+
 
   const handleTabChange = (newTab: "SUBMISSIONS" | "CREATE_AI" | "CREATE_MANUAL") => {
     setActiveTab(newTab);
@@ -67,24 +72,28 @@ function OrganizerDashboardContent() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
-    
+    if (confirmDeleteId !== eventId) {
+      setConfirmDeleteId(eventId);
+      return;
+    }
+    setConfirmDeleteId(null);
     try {
       const res = await fetch(`/api/organizer/events/${eventId}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        alert("Event deleted successfully");
+        success("Event deleted successfully.");
         fetchOrganizerData();
       } else {
         const errorData = await res.json();
-        alert(`Failed to delete event: ${errorData.error || 'Unknown error'}`);
+        error(`Failed to delete event: ${errorData.error || "Unknown error"}`);
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred while deleting the event");
+      error("An error occurred while deleting the event.");
     }
   };
+
 
   useEffect(() => {
     fetchOrganizerData();
@@ -346,13 +355,31 @@ function OrganizerDashboardContent() {
                           Public Page →
                         </Link>
                       )}
-                      <button
-                        onClick={() => handleDeleteEvent(ev.id)}
-                        className="p-2 rounded-full text-kalvium-muted hover:text-kalvium-coral bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt hover:bg-white dark:hover:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border transition shadow-soft-xs active:scale-95"
-                        title="Delete Event"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {confirmDeleteId === ev.id ? (
+                        <div className="flex items-center gap-1.5 animate-fade-in">
+                          <span className="text-[11px] text-kalvium-coral font-medium shrink-0">Delete?</span>
+                          <button
+                            onClick={() => handleDeleteEvent(ev.id)}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-kalvium-coral text-white hover:bg-kalvium-coral/90 transition active:scale-95 shadow-sm"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt text-kalvium-muted border border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral transition active:scale-95"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteEvent(ev.id)}
+                          className="p-2 rounded-full text-kalvium-muted hover:text-kalvium-coral bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt hover:bg-white dark:hover:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border transition shadow-soft-xs active:scale-95"
+                          title="Delete Event"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

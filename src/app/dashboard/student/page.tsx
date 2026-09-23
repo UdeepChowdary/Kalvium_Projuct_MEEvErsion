@@ -25,7 +25,9 @@ import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
 import CreateEventStudio from "@/components/CreateEventStudio";
 import ManualEventForm from "@/components/ManualEventForm";
 import { useAuth, getDashboardRoute } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { getTimeGreeting } from "@/lib/time";
+
 
 type TabType = "AGENDA" | "REQUESTS" | "CREATE_AI" | "CREATE_MANUAL";
 
@@ -33,9 +35,13 @@ function StudentDashboardContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { success, error } = useToast();
 
   // Tab State: Agenda, Requests, or Create
   const [activeTab, setActiveTab] = useState<TabType>("AGENDA");
+  // Inline delete confirmation — holds the eventId pending deletion
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
 
   // Agenda Data (Saved events & conflicts)
   const [agendaData, setAgendaData] = useState<any>(null);
@@ -118,23 +124,29 @@ function StudentDashboardContent() {
   }, [user]);
 
   const handleDeleteRequest = async (eventId: string) => {
-    if (!confirm("Are you sure you want to withdraw this event request? This action cannot be undone.")) return;
+    // First call: set the id so inline confirm renders. Second call: actually delete.
+    if (confirmDeleteId !== eventId) {
+      setConfirmDeleteId(eventId);
+      return;
+    }
+    setConfirmDeleteId(null);
     try {
       const res = await fetch(`/api/organizer/events/${eventId}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        alert("Event request withdrawn successfully.");
+        success("Event request withdrawn successfully.");
         fetchRequests();
       } else {
         const err = await res.json();
-        alert(`Failed to withdraw request: ${err.error || "Unknown error"}`);
+        error(`Failed to withdraw request: ${err.error || "Unknown error"}`);
       }
     } catch (e) {
       console.error(e);
-      alert("An error occurred while withdrawing the event request.");
+      error("An error occurred while withdrawing the event request.");
     }
   };
+
 
   if (authLoading || (user && user.role?.toUpperCase() !== "STUDENT")) {
     return (
@@ -713,13 +725,31 @@ function StudentDashboardContent() {
                           Public Page →
                         </Link>
                       )}
-                      <button
-                        onClick={() => handleDeleteRequest(ev.id)}
-                        className="p-2 rounded-full text-kalvium-muted hover:text-kalvium-coral bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt hover:bg-white dark:hover:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border transition shadow-soft-xs active:scale-95"
-                        title="Withdraw Event Request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {confirmDeleteId === ev.id ? (
+                        <div className="flex items-center gap-1.5 animate-fade-in">
+                          <span className="text-[11px] text-kalvium-coral font-medium shrink-0">Withdraw?</span>
+                          <button
+                            onClick={() => handleDeleteRequest(ev.id)}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-kalvium-coral text-white hover:bg-kalvium-coral/90 transition active:scale-95 shadow-sm"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt text-kalvium-muted border border-kalvium-border dark:border-kalvium-dark-border hover:border-kalvium-coral transition active:scale-95"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteRequest(ev.id)}
+                          className="p-2 rounded-full text-kalvium-muted hover:text-kalvium-coral bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt hover:bg-white dark:hover:bg-kalvium-dark-surface border border-kalvium-border dark:border-kalvium-dark-border transition shadow-soft-xs active:scale-95"
+                          title="Withdraw Event Request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
