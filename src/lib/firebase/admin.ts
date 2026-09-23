@@ -52,6 +52,11 @@ function initAdminApp(): App {
     }
   }
 
+  const apps = getApps();
+  if (apps.length > 0) {
+    return apps[0]!;
+  }
+
   // Fallback app to prevent module load crash during build time or missing credentials
   console.warn("[Firebase Admin] Initializing fallback app without full credentials.");
   return initializeApp({
@@ -75,26 +80,35 @@ function getAdminStorage(): Storage {
   return getStorage(app);
 }
 
-export const adminAuth = new Proxy({} as Auth, {
-  get(_, prop) {
-    const instance = getAdminAuth();
-    const val = (instance as any)[prop];
+const proxyHandler = {
+  get(target: any, prop: string | symbol) {
+    // Prevent module bundler/loader checks from prematurely triggering Firebase initialization
+    if (
+      prop === "then" ||
+      prop === "__esModule" ||
+      prop === "default" ||
+      typeof prop === "symbol"
+    ) {
+      return target[prop];
+    }
+    const instance = target.__getInstance ? target.__getInstance() : null;
+    if (!instance) return undefined;
+    const val = instance[prop];
     return typeof val === "function" ? val.bind(instance) : val;
   },
-});
+};
 
-export const adminDb = new Proxy({} as Firestore, {
-  get(_, prop) {
-    const instance = getAdminDb();
-    const val = (instance as any)[prop];
-    return typeof val === "function" ? val.bind(instance) : val;
-  },
-});
+export const adminAuth = new Proxy(
+  { __getInstance: getAdminAuth } as any,
+  proxyHandler
+) as Auth;
 
-export const adminStorage = new Proxy({} as Storage, {
-  get(_, prop) {
-    const instance = getAdminStorage();
-    const val = (instance as any)[prop];
-    return typeof val === "function" ? val.bind(instance) : val;
-  },
-});
+export const adminDb = new Proxy(
+  { __getInstance: getAdminDb } as any,
+  proxyHandler
+) as Firestore;
+
+export const adminStorage = new Proxy(
+  { __getInstance: getAdminStorage } as any,
+  proxyHandler
+) as Storage;
