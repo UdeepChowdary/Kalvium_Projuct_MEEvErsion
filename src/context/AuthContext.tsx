@@ -70,6 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // ignore
       }
       if (isLoggingOutRef.current) return null;
+      if (typeof document !== "undefined") {
+        document.cookie = "campus_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        document.cookie = "campus_user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        document.cookie = "campus_user_role_sig=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      }
       setUser(null);
       setLoading(false);
       return null;
