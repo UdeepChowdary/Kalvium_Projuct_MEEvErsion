@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, Sparkles, RefreshCw } from "lucide-react";
 import EventCard, { EventCardData } from "@/components/EventCard";
 import CampusVerifiedBadge from "@/components/CampusVerifiedBadge";
-import EventDetailDrawer from "@/components/EventDetailDrawer";
+import dynamic from "next/dynamic";
+const EventDetailDrawer = dynamic(() => import("@/components/EventDetailDrawer"), { ssr: false });
 import StaggerGrid from "@/components/StaggerGrid";
 import { useAuth } from "@/context/AuthContext";
 
@@ -70,8 +71,7 @@ export default function EventsExplorePage() {
       if (sortBy) params.set("sortBy", sortBy);
 
       const res = await fetch(`/api/events?${params.toString()}`, {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
+        next: { revalidate: 60 },
       });
       if (res.ok) {
         const data = await res.json();

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   X,
   Calendar,
@@ -17,7 +18,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import CampusVerifiedBadge from "./CampusVerifiedBadge";
-import ClashWarningModal from "./ClashWarningModal";
+import dynamic from "next/dynamic";
+const ClashWarningModal = dynamic(() => import("./ClashWarningModal"), { ssr: false });
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { isStartingSoon, getHumanCountdown, isEventPast } from "@/lib/time";
@@ -190,9 +192,11 @@ export default function EventDetailDrawer({
           >
             {/* Poster Media Box */}
             <div className="relative rounded-2xl overflow-hidden bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border shadow-sm group">
-              <img
+              <Image
                 src={event.posterUrl}
                 alt={event.title}
+                width={800}
+                height={800}
                 className="w-full h-auto object-contain max-h-[500px] transition-transform duration-500 ease-editorial group-hover:scale-[1.015]"
               />
               {isPast ? (
