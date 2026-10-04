@@ -19,18 +19,9 @@ function RegisterContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState(roleParam === "ORGANIZER" ? "ORGANIZER" : "STUDENT");
+  const role = "STUDENT";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Sync role state if query param changes
-  useEffect(() => {
-    if (roleParam === "ORGANIZER") {
-      setRole("ORGANIZER");
-    } else if (roleParam === "STUDENT") {
-      setRole("STUDENT");
-    }
-  }, [roleParam]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -76,7 +67,7 @@ function RegisterContent() {
     );
   }
 
-  const isManagerTarget = roleParam === "CAMPUS_MANAGER" || redirectParam?.includes("/manager");
+  const isRestrictedTarget = roleParam === "CAMPUS_MANAGER" || roleParam === "ORGANIZER" || redirectParam?.includes("/manager") || redirectParam?.includes("/organizer");
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
@@ -101,28 +92,28 @@ function RegisterContent() {
 
         <h1 className="text-2xl sm:text-3xl font-display font-black text-kalvium-ink dark:text-kalvium-dark-ink">Create Your Account</h1>
         <p className="text-xs text-kalvium-muted dark:text-kalvium-dark-muted mt-1">
-          Join the campus event ecosystem as a student or club organizer.
+          Join the campus event ecosystem as a student.
         </p>
       </div>
 
-      {/* Campus Manager Notice if manager portal was clicked */}
-      {isManagerTarget && (
+      {/* Restricted Notice if manager or organizer portal was clicked */}
+      {isRestrictedTarget && (
         <div className="mb-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs shadow-xs">
           <div className="flex items-center gap-2 font-bold mb-1 text-amber-700 dark:text-amber-300">
             <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Campus Manager Portal Access</span>
+            <span>Restricted Portal Access</span>
           </div>
           <p className="text-[11px] leading-relaxed text-kalvium-muted dark:text-kalvium-dark-muted">
-            Campus Manager privileges are provisioned directly by university administration. If you already have manager credentials, please{" "}
+            Campus Manager and Club Organizer accounts are provisioned directly by university administration. If you already have these credentials, please{" "}
             <Link
               href={
                 redirectParam
-                  ? `/login?redirect=${encodeURIComponent(redirectParam)}&role=CAMPUS_MANAGER`
-                  : "/login?redirect=%2Fdashboard%2Fmanager&role=CAMPUS_MANAGER"
+                  ? `/login?redirect=${encodeURIComponent(redirectParam)}&role=${roleParam || "STUDENT"}`
+                  : "/login"
               }
               className="text-kalvium-coral font-bold underline hover:text-kalvium-coral-hover"
             >
-              Sign In with Manager credentials →
+              Sign In with your credentials →
             </Link>
           </p>
         </div>
@@ -137,40 +128,7 @@ function RegisterContent() {
 
         <div>
           <label className="block text-xs font-bold text-kalvium-ink dark:text-kalvium-dark-ink uppercase tracking-wider mb-1.5">
-            Account Type
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setRole("STUDENT")}
-              className={`p-2.5 rounded-xl border text-xs font-bold transition ${
-                role === "STUDENT"
-                  ? "bg-kalvium-coral-tint text-kalvium-coral border-kalvium-coral/40 shadow-soft-xs"
-                  : "bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt text-kalvium-muted dark:text-kalvium-dark-muted border-kalvium-border dark:border-kalvium-dark-border hover:text-kalvium-ink"
-              }`}
-            >
-              🎓 Student
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole("ORGANIZER")}
-              className={`p-2.5 rounded-xl border text-xs font-bold transition ${
-                role === "ORGANIZER"
-                  ? "bg-kalvium-warning-tint text-kalvium-warning border-kalvium-warning-border shadow-soft-xs"
-                  : "bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt text-kalvium-muted dark:text-kalvium-dark-muted border-kalvium-border dark:border-kalvium-dark-border hover:text-kalvium-ink"
-              }`}
-            >
-              🏛 Club Organizer
-            </button>
-          </div>
-          <p className="text-[10px] text-kalvium-muted dark:text-kalvium-dark-muted mt-1.5 font-sans">
-            * Campus Manager access is restricted to appointed deans & faculty.
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-kalvium-ink dark:text-kalvium-dark-ink uppercase tracking-wider mb-1.5">
-            {role === "ORGANIZER" ? "Club / Society Name" : "Full Name"}
+            Full Name
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-kalvium-muted dark:text-kalvium-dark-muted absolute left-3 top-1/2 -translate-y-1/2" />
@@ -179,7 +137,7 @@ function RegisterContent() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={role === "ORGANIZER" ? "e.g. Robotics & AI Society" : "e.g. Alex Johnson"}
+              placeholder="e.g. Alex Johnson"
               className="w-full bg-kalvium-surface-alt dark:bg-kalvium-dark-surface-alt border border-kalvium-border dark:border-kalvium-dark-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-kalvium-ink dark:text-kalvium-dark-ink focus:outline-none focus:border-kalvium-coral transition"
             />
           </div>

@@ -210,7 +210,7 @@ function LoginContent() {
             }
             className="text-kalvium-coral font-bold hover:underline"
           >
-            Register as Student / Club
+            Register as Student
           </Link>
         </p>
       </form>

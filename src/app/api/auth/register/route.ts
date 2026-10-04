@@ -71,8 +71,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Role protection: CAMPUS_MANAGER cannot be self-registered
-    const normalizedRole = role === "ORGANIZER" ? "ORGANIZER" : "STUDENT";
+    // Role protection: CAMPUS_MANAGER and ORGANIZER cannot be self-registered
+    const normalizedRole = "STUDENT";
 
     // Check if another account with this email exists under a DIFFERENT UID
     const existingUsers = await adminDb.collection("users")
