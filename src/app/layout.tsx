@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   title: "CampusHub — Verified campus events",
   description:
     "Discover verified campus events, save what matters, and never double-book yourself. Powered by AI poster analysis and certified by campus leadership.",
+  manifest: "/manifest.json",
+};
+
+export const viewport = {
+  themeColor: "#F35D5D",
 };
 
 export default function RootLayout({
